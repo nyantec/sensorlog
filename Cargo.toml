@@ -1,14 +1,14 @@
 [package]
-name = "esensord"
+name = "sensorlog"
 version = "0.1.0"
 authors = ["Paul Asmuth <paul@asmuth.com>"]
 
 [[bin]]
-name = "esensord"
+name = "sensorlogd"
 path = "src/server.rs"
 
 [[bin]]
-name = "esensorctl"
+name = "sensorlogctl"
 path = "src/cli.rs"
 
 [dependencies]

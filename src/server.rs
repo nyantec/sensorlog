@@ -40,7 +40,7 @@ const VERSION : &'static str = env!("CARGO_PKG_VERSION");
 const LOGLEVEL_DEFAULT : &'static str = "info";
 
 const USAGE : &'static str = "\
-Usage: $ esensord [OPTIONS]
+Usage: $ sensorlog [OPTIONS]
    --listen_http <addr>          Listen for HTTP connection on this address
    --datadir <dir>               Set the data directory
    --quota_default <quota>       Set the default storage quota for all sensors
@@ -54,7 +54,7 @@ Usage: $ esensord [OPTIONS]
    -V, --version                 Display the version of this binary and exit
 
 Examples:
-   $ esensord --datadir /var/sensordata --listen_http localhost:8080 --quota_default infinite
+   $ sensorlog --datadir /var/sensordata --listen_http localhost:8080 --quota_default infinite
 ";
 
 fn main() {
@@ -89,14 +89,14 @@ fn main() {
 	std::env::set_var(
 			"RUST_LOG",
 			format!(
-					"esensord={},{}",
+					"sensorlog={},{}",
 					flags.opt_str("loglevel").unwrap_or(LOGLEVEL_DEFAULT.into()),
 					std::env::var("RUST_LOG").unwrap_or("".into())));
 
 	env_logger::init();
 
 	// start server
-	info!("esensord v{}", VERSION);
+	info!("sensorlog v{}", VERSION);
 
 	let datadir = match flags.opt_str("datadir") {
 		Some(v) => v,
