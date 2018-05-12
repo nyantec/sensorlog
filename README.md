@@ -73,63 +73,6 @@ The output should look similar to this:
     ]
 
 
-Usage
------
-
-The esensord distribution consists of two programs: `esensord` and `esensorctl`.
-The esensord program is the main server program and the second esensorctl program
-is a simple command line client.
-
-    Usage: $ esensord [OPTIONS]
-
-    Options:
-
-       --listen_http=<addr>
-          Listen for HTTP connection on this address
-
-       --datadir=<dir>
-          Set the data directory
-
-       --quota_default=<quota>
-          Set the default storage quota for all sensors
-
-       --quota=<sensor_id>:<quota>
-           Set the storage quota for a given sensor id
-
-       --clock_watchdog=<mode>
-          Enable the clock watchdog. Modes are 'off', 'panic' and 'wipe'
-
-       --clock_watchdog_trigger_forward=<threshold>
-          Trigger the clock watchdog if the system time jumps forward by more than threshold
-
-       --clock_watchdog_trigger_backward=<threshold>
-          Trigger the clock watchdog if the system time jumps backward by more than threshold
-
-       --daemonize
-          Daemonize the server
-
-       --pidfile=<file>
-          Write a PID file
-
-       --loglevel <level>
-          Minimum log level (default: INFO)
-
-       --[no]log_to_syslog
-          Do[n't] log to syslog
-
-       --[no]log_to_stderr
-          Do[n't] log to stderr
-
-       -?, --help
-          Display this help text and exit
-
-       -V, --version
-          Display the version of this binary and exit
-
-    Examples:
-       $ esensord --datadir /var/sensordata --listen_http localhost:8080 --quota_default infinite
-
-
 Retention & Quotas
 ------------------
 
@@ -221,6 +164,66 @@ jump in system time. That means that shutting down the esensord service for a lo
 and then re-starting could result in a false positive watchdog trigger. To prevent
 this, the clock watchdog foward trigger value should bebe set to a value that is larger
 than the longest expected downtime.
+
+
+Configuration
+-------------
+
+The esensord distribution consists of two programs: `esensord` and `esensorctl`.
+The esensord program is the main server program and the second esensorctl program
+is a simple command line client.
+
+All configuration options are set as command line arguments:
+
+    Usage: $ esensord [OPTIONS]
+
+    Options:
+
+       --listen_http=<addr>
+          Listen for HTTP connection on this address
+
+       --datadir=<dir>
+          Set the data directory
+
+       --quota_default=<quota>
+          Set the default storage quota for all sensors
+
+       --quota=<sensor_id>:<quota>
+           Set the storage quota for a given sensor id
+
+       --clock_watchdog=<mode>
+          Enable the clock watchdog. Modes are 'off', 'panic' and 'wipe'
+
+       --clock_watchdog_trigger_forward=<threshold>
+          Trigger the clock watchdog if the system time jumps forward by more than threshold
+
+       --clock_watchdog_trigger_backward=<threshold>
+          Trigger the clock watchdog if the system time jumps backward by more than threshold
+
+       --daemonize
+          Daemonize the server
+
+       --pidfile=<file>
+          Write a PID file
+
+       --loglevel <level>
+          Minimum log level (default: INFO)
+
+       --[no]log_to_syslog
+          Do[n't] log to syslog
+
+       --[no]log_to_stderr
+          Do[n't] log to stderr
+
+       -?, --help
+          Display this help text and exit
+
+       -V, --version
+          Display the version of this binary and exit
+
+    Examples:
+       $ esensord --datadir /var/sensordata --listen_http localhost:8080 --quota_default infinite
+
 
 
 HTTP API
