@@ -107,23 +107,6 @@ may use an unbounded amount of disk space:
         --listen_http localhost:8080 \
         --quota_default infinite
 
-Note that the specified quota is applied to the total used storage space including
-metadata (but excluding filesystem overheads). In other words, the amount of
-storage actually available for measurement payload data is bit less than the
-configured quota.
-
-
-Monotonic Time
---------------
-
-Note that esensord requires the time of measurements to be monotonically increasing.
-If you try to insert a measurement that is older than another measurement that
-is already stored, you will get an error message.
-
-If you're using wall clock timestamps (which is the default), you should give some
-considerations on how you want to handle large clock changes. One option for dealing
-with such a scenario is to enable the clock watchdog (see below).
-
 
 Clock Watchdog
 --------------
@@ -138,18 +121,14 @@ incorrectly enters a system time far in the future and later, after noticing
 the mistake, changes the system time to the correct value. How should a service
 like esensord behave in this scenario?
 
-Simply failing open and continuing to serve the existing data with the incorrect
-timestamps on record is clearly not a good solution.
+The naive behaviour would be to simply fail open and continue to serve the existing
+data on record. Of course, this would mean serving incorrect data without any
+way for the user to tell that it is incorrect. Clearly not a good solution!
 
-Another strategy would be to try to handle the scenario gracefully by re-writing
-the existing data to correct for the time offset. However, this solution was
-not chosen for esensord since it was deemed to be a bit expensive and error prone
-to implement in practice.
-
-Instead, esensord offers a 'clock watchdog' that allows you to fail closed whenever
-the system time changes in unexpected ways. When the clock watchdog is enabled,
+So instead, esensord offers a 'clock watchdog' option that allows you to fail closed
+whenever the system time changes in unexpected ways. With the clock watchdog enabled
 esensord will watch the system clock and trigger the watchdog once it detects a
-large jump in time (in either direction).
+large jump in time.
 
 The watchdog can run in either of two modes called 'panic' and 'wipe'. In the 'panic'
 mode, esensord will simply exit with an error message when the watchdog is triggered.
@@ -164,12 +143,6 @@ if the time jumps forwards by more than 7 days or backwards by more than 10 minu
       --clock_watchdog_trigger_forward 7days \
       --clock_watchdog_trigger_backward 10min \
       ...
-
-Note that esensord can not differentiate between having been re-started and a forward
-jump in system time. That means that shutting down the esensord service for a long period
-and then re-starting could result in a false positive watchdog trigger. To prevent
-this, the clock watchdog foward trigger value should bebe set to a value that is larger
-than the longest expected downtime.
 
 
 Configuration
@@ -258,10 +231,39 @@ Since esensord is designed for semi-embedded use cases, i.e. to run on a constra
 system in a high-reliability environment, the primary design goals are simplicity,
 robustness and bounded resource usage.
 
-Whenever there is a conflict between these
-goals and other competing goals we have to make a tradeoff. Hence, esensord does
-not feature a particularly high operation throughput, low operation latency or minimal
+Whenever there is a conflict between these goals and other competing goals we have
+to make a tradeoff. Hence, esensord does not feature a particularly high operation
+throughput, low operation latency or minimal
 resource usage.
+
+
+Caveats
+-------
+
+- esensord requires the time of measurements to be monotonically increasing.
+  If you try to insert a measurement that is older than another measurement that
+  is already stored, you will get an error message.
+
+- esensord can not differentiate between having been re-started and a forward
+  jump in system time. That means that shutting down the esensord service for a long period
+  and then re-starting could result in a false positive watchdog trigger. To prevent
+  this, the clock watchdog foward trigger value should be set to a value that is larger
+  than the longest expected downtime.
+
+- The specified storage quotas are applied to the total used storage space including
+  esensord's metadata, but excluding filesystem overheads. This means the amount
+  of storage actually available for measurement payload data is a bit less than the
+  configured quota. Also, the amount of actual disk space used is a bit more
+  than the configured quota once filesystem overheads are accounted for.
+
+
+Alternatives Considered
+-----------------------
+
+- Another alternative strategy for dealing with clock changes would be to handle them
+  gracefully by re-writing the existing data to correct for the time offset. However,
+  this solution was not chosen for esensord since it was deemed to be a bit too expensive
+  and error prone to implement in practice.
 
 
 License
