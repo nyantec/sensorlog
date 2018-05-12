@@ -19,19 +19,12 @@ field is used to identify a logical stream of consecutive measurements. The `dat
 field is treated as an opaque blob; the contents are entirely user-defined.
 
 
-Building
---------
+Installation
+------------
 
-To build the `esensord` binary, run `cargo build`:
+The fastest way to install `esensord` is via the the Cargo utility:
 
-    $ cd esensord
-    $ cargo build
-
-After you have made any changes to the code, run the test suite by executing
-`cargo test`:
-
-    $ cd esensord
-    $ cargo test
+    $ cargo install esensord
 
 
 Getting Started
