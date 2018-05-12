@@ -128,8 +128,9 @@ may use an unbounded amount of disk space:
         --quota_default infinite
 
 Note that the specified quota is applied to the total used storage space including
-metadata and other overheads; i.e. the amount of storable payload measurement
-data is smaller than the configured quota.
+metadata (but excluding filesystem overheads). In other words, the amount of
+storage actually available for measurement payload data is bit less than the
+configured quota.
 
 
 HTTP API
@@ -149,6 +150,17 @@ detailed documentation on the API please [refer to the the documentation](https:
 
      GET /ping
          Responds with 'pong'
+
+
+Monotonic Time
+--------------
+
+Note that esensord requires that the time of measurements is monotonically increasing.
+If you try to insert a measurement that is older than another measurement that
+is already stored, you will get an error message.
+
+If you're using non-monotonic wall clock timestamps (which is the default), you
+should give some considerations on how you want to handle large clock changes.
 
 
 Design Goals
