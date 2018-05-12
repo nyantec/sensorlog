@@ -175,10 +175,10 @@ to be deleted.
 Here is how to enable the clock watchdog in 'panic' mode with a trigger delta of
 30 minutes:
 
-		$ esensord \
-			--clock_watchdog panic \
-			--clock_watchdog_trigger_delta 30min \
-			...
+    $ esensord \
+      --clock_watchdog panic \
+      --clock_watchdog_trigger_delta 30min \
+      ...
 
 Note that esensord can not differentiate between having been shut down and re-started
 and a jump in system time. That means that shutting down the esensord service for a
