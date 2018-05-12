@@ -86,8 +86,13 @@ fn main() {
 	}
 
 	// start logger
-	let loglevel = flags.opt_str("loglevel").unwrap_or(LOGLEVEL_DEFAULT.into());
-	std::env::set_var("RUST_LOG", loglevel);
+	std::env::set_var(
+			"RUST_LOG",
+			format!(
+					"esensord={},{}",
+					flags.opt_str("loglevel").unwrap_or(LOGLEVEL_DEFAULT.into()),
+					std::env::var("RUST_LOG").unwrap_or("".into())));
+
 	env_logger::init();
 
 	// start server
