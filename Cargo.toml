@@ -1,7 +1,9 @@
 [package]
 name = "sensorlog"
+description = "A lightweight data logging service"
 version = "0.1.0"
-authors = ["Paul Asmuth <paul@asmuth.com>"]
+authors = ["The sensorlog Authors <oss@nyantec.com>"]
+license = "MirOS"
 
 [[bin]]
 name = "sensorlogd"
