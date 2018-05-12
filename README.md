@@ -40,12 +40,12 @@ In a shell, run this command to insert the measurement "3250" for sensor
 's1.hydraulic_pressure_psi' (the time parameter will be defaulted to the current
 wall clock time):
 
-    curl -X POST -d "3250" localhost:8080/sensors/s1.hydraulic_pressure_psi
+    $ curl -X POST -d "3250" localhost:8080/sensors/s1.hydraulic_pressure_psi
 
 Afterwards, run this command to retrieve the last 10 minutes of measurements from
 the 's1.hydraulic_pressure_psi' sensor:
 
-    curl -v localhost:8080/sensors/s1.hydraulic_pressure_psi?from=-10min&until=now
+    $ curl -v localhost:8080/sensors/s1.hydraulic_pressure_psi?from=-10min&until=now
 
 The output should look similar to this:
 
