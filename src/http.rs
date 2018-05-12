@@ -68,12 +68,23 @@ impl APIHandler {
 
 		let method = req.url.path()[2].to_string();
 		let mut body = Vec::<u8>::new();
-		match req.body.read_to_end(&mut body) {
-			Ok(_) => (),
+		let body_str = match req.body.read_to_end(&mut body) {
+			Ok(_) => String::from_utf8_lossy(&body),
 			Err(_) => return Ok(invalid_request)
 		};
 
-		let mut res = Response::with((iron::status::Ok, "{}"));
+		let mut res = match ::api_json::call_str(&method, &body_str) {
+			Ok(res) =>
+				Response::with((iron::status::Ok, res)),
+			Err(err) => match err.code {
+				::ErrorCode::BadRequest =>
+						Response::with((iron::status::BadRequest, err.message)),
+				::ErrorCode::NotFound =>
+						Response::with((iron::status::NotFound, err.message)),
+				::ErrorCode::InternalServerError =>
+						Response::with((iron::status::InternalServerError, err.message)),
+			}
+		};
 
 		res.headers.set(
 				ContentType(

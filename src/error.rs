@@ -5,13 +5,18 @@ pub enum ErrorCode { InternalServerError, NotFound, BadRequest }
 
 #[derive(Debug)]
 pub struct Error {
-	message: String,
-	code: ErrorCode,
+	pub message: String,
+	pub code: ErrorCode,
 }
 
 #[allow(unused_macros)]
 macro_rules! err_server {
-	($($arg:tt)*) => (::Error::new(&format!($($arg)*), ErrorCode::InternalServerError))
+	($($arg:tt)*) => (::Error::new(&format!($($arg)*), ::ErrorCode::InternalServerError))
+}
+
+#[allow(unused_macros)]
+macro_rules! err_user {
+	($($arg:tt)*) => (::Error::new(&format!($($arg)*), ::ErrorCode::BadRequest))
 }
 
 impl Error {

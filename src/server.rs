@@ -26,14 +26,15 @@ extern crate serde;
 extern crate serde_json;
 #[macro_use] extern crate serde_derive;
 
+#[macro_use] mod error;
 mod http;
 mod api;
-mod error;
+mod api_json;
 
 use std::env;
 use std::io;
 use std::io::Write;
-use ::error::Error;
+use ::error::{Error,ErrorCode};
 
 const VERSION : &'static str = env!("CARGO_PKG_VERSION");
 const LOGLEVEL_DEFAULT : &'static str = "info";
