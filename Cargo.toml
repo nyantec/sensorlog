@@ -1,0 +1,14 @@
+[package]
+name = "esensord"
+version = "0.1.0"
+authors = ["Paul Asmuth <paul@asmuth.com>"]
+
+[[bin]]
+name = "esensord"
+path = "src/server.rs"
+
+[[bin]]
+name = "esensorctl"
+path = "src/cli.rs"
+
+[dependencies]
