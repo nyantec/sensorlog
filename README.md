@@ -1,12 +1,16 @@
 esensord
 ========
 
-[![Build Status](https://travis-ci.org/nyantec/esensord.svg?branch=master)](https://travis-ci.org/nyantec/esensord)
-
 esensord is a lightweight data logging service.
 
+[![Build Status](https://travis-ci.org/nyantec/esensord.svg?branch=master)](https://travis-ci.org/nyantec/esensord)
+
+
+Data Model
+----------
+
 The esensord binary is a standalone server program that allows you to store and
-retrieve measurement data. Clients interact with the server via a HTTP+JSON API.
+retrieve measurement data. Clients interact with the server via a network API.
 The interface is very simple and consists of only three operations:
 
   - `insertMeasurement(sensor_id, time, data)` - Store a measurement
@@ -112,7 +116,7 @@ configured quota.
 Monotonic Time
 --------------
 
-Note that esensord requires that the time of measurements is monotonically increasing.
+Note that esensord requires the time of measurements to be monotonically increasing.
 If you try to insert a measurement that is older than another measurement that
 is already stored, you will get an error message.
 
@@ -250,7 +254,9 @@ Design Goals
 
 Since esensord is designed for semi-embedded use cases, i.e. to run on a constrained
 system in a high-reliability environment, the primary design goals are simplicity,
-robustness and bounded resource usage. Whenever there is a conflict between these
+robustness and bounded resource usage.
+
+Whenever there is a conflict between these
 goals and other competing goals we have to make a tradeoff. Hence, esensord does
 not feature a particularly high operation throughput, low operation latency or minimal
 resource usage.
