@@ -31,19 +31,34 @@ use std::io::Write;
 const VERSION : &'static str = env!("CARGO_PKG_VERSION");
 const LOGLEVEL_DEFAULT : &'static str = "info";
 
-fn print_usage() {
+const USAGE : &'static str = "\
+Usage: $ esensord [OPTIONS]
+   --listen_http <addr>          Listen for HTTP connection on this address
+   --datadir <dir>               Set the data directory
+   --quota_default <quota>       Set the default storage quota for all sensors
+   --quota <sensor_id>:<quota>   Set the storage quota for a given sensor id
+   --daemonize                   Daemonize the server
+   --pidfile <file>              Write a PID file
+   --loglevel <level>            Minimum log level (default: INFO)
+   --[no]log_to_syslog           Do[n't] log to syslog
+   --[no]log_to_stderr           Do[n't] log to stderr
+   -?, --help                    Display this help text and exit
+   -V, --version                 Display the version of this binary and exit
 
-}
+Examples:
+   $ esensord --datadir /var/sensordata --listen_http localhost:8080 --quota_default infinite
+";
 
 fn main() {
 	// parse command line flags
 	let args : Vec<String> = env::args().collect();
 
 	let mut flag_cfg = getopts::Options::new();
-	flag_cfg.optopt("", "listen_http", "Listen for http connections", "PORT");
-	flag_cfg.optopt("", "loglevel", "Loglevel", "LEVEL");
-	flag_cfg.optflag("h", "help", "Display this help text and exit");
-	flag_cfg.optflag("v", "version", "Display the version of this binary and exit");
+	flag_cfg.optopt("", "listen_http", "", "PORT");
+	flag_cfg.optopt("", "datadir", "", "PATH");
+	flag_cfg.optopt("", "loglevel", "", "LEVEL");
+	flag_cfg.optflag("h", "help", "");
+	flag_cfg.optflag("v", "version", "");
 
 	let flags = match flag_cfg.parse(&args[1..]) {
 		Ok(m) => { m }
@@ -58,7 +73,7 @@ fn main() {
 	};
 
 	if flags.opt_present("h") {
-		print_usage();
+		std::io::stdout().write(USAGE.as_bytes()).unwrap();
 		return;
 	}
 
@@ -69,5 +84,21 @@ fn main() {
 
 	// start server
 	info!("esensord v{}", VERSION);
+
+	let datadir = match flags.opt_str("datadir") {
+		Some(v) => v,
+		None => {
+			writeln!(&mut std::io::stderr(), "missing option: --datadir").unwrap();
+			std::process::exit(1);
+		}
+	};
+
+	let listen_http = match flags.opt_str("listen_http") {
+		Some(v) => v,
+		None => {
+			writeln!(&mut std::io::stderr(), "missing option: --listen_http").unwrap();
+			std::process::exit(1);
+		}
+	};
 }
 
