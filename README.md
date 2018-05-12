@@ -81,8 +81,10 @@ Retention & Quotas
 ------------------
 
 The retention and garbage collection system of sensorlog is based around a simple
-storage quota that is assigned to each `sensor_id`. Quotas are expressed in bytes
-and rotation of measurements is always first-in, first-out.
+storage quota that is assigned to each `sensor_id`. Once the quota for a given
+sensor is used up, old measurements are dropped whenever new measurements are
+added for that sensor. Quotas are expressed in bytes and rotation of measurements
+is always first-in, first-out.
 
 Quotas are configured using command line flags when starting the sensorlog server.
 You can set a default quota value that applies to all sensors as well as a quota
