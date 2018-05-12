@@ -19,14 +19,21 @@
  * of said person’s immediate fault when using the work as intended.
  */
 extern crate getopts;
+#[macro_use] extern crate log;
 extern crate env_logger;
+extern crate iron;
+extern crate serde;
+extern crate serde_json;
+#[macro_use] extern crate serde_derive;
 
-#[macro_use]
-extern crate log;
+mod http;
+mod api;
+mod error;
 
 use std::env;
 use std::io;
 use std::io::Write;
+use ::error::Error;
 
 const VERSION : &'static str = env!("CARGO_PKG_VERSION");
 const LOGLEVEL_DEFAULT : &'static str = "info";
@@ -93,12 +100,13 @@ fn main() {
 		}
 	};
 
-	let listen_http = match flags.opt_str("listen_http") {
-		Some(v) => v,
-		None => {
-			writeln!(&mut std::io::stderr(), "missing option: --listen_http").unwrap();
-			std::process::exit(1);
-		}
-	};
+	// start http server
+	http::http_server_start(http::ServerOptions {
+		listen_addr: match flags.opt_str("listen_http") {
+			Some(addr) => addr,
+			None => "[::]:8080".to_owned()
+		},
+	});
+
 }
 
