@@ -132,13 +132,13 @@ HTTP API
 The HTTP+JSON API is very simple. Below is a list of all API methods. For more
 detailed documentation on the API please [refer to the the documentation](https://esensord.org)
 
-    POST /sensor/:sensor_id?time=TIMESTAMP
-         Store a measurement for a given sensor (the measurement is the POST body)
+    POST /api/v1/store_measurement
+         Store a measurement for a given sensor
 
-     GET /sensor/:sensor_id?last
+    POST /api/v1/fetch_last_measurement
          Retrieve the most recent measurement from a given sensor
 
-     GET /sensor/:sensor_id?from=TIMESTAMP&until=TIMESTAMP
+    POST /api/v1/fetch_measurements
          Retrieve all measurements from a given sensor in the specified time range
 
      GET /ping
