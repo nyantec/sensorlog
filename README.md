@@ -159,8 +159,53 @@ Note that esensord requires that the time of measurements is monotonically incre
 If you try to insert a measurement that is older than another measurement that
 is already stored, you will get an error message.
 
-If you're using non-monotonic wall clock timestamps (which is the default), you
-should give some considerations on how you want to handle large clock changes.
+If you're using wall clock timestamps (which is the default), you should give some
+considerations on how you want to handle large clock changes. One option for dealing
+with such a scenario is to enable the clock watchdog (see below).
+
+
+Clock Watchdog
+--------------
+
+By default, esensord will store the current, absolute wall clock time with each
+measurement. This can be problematic when running on an 'offline' system that does
+not have access to a true clock reference like GPS or the internet.
+
+Let's assume that we're running on such an offline system that requires the system
+time to be configured by a field operator. Consider the case where the operator
+incorrectly enters a system time far in the future and later, after noticing
+the mistake, re-configures the system time to the correct value.
+
+How should a service like esensord handle such a scenario? Simply continuing to
+serve the existing data with the timestamps on record is clearly incorrect. While
+one could come up with many strategies for re-writing the existing data to correct
+for the time offset, such a solution would be very expensive and a bit error prone
+to implement in practice.
+
+To solve this problem, esensord offers a 'clock watchdog'. When you enable
+the clock watchdog, esensord will watch the system clock and trigger the watchdog
+once it detects a large jump in time (in either direction).
+
+The watchdog can run in either of two modes called 'panic' and 'wipe'. In the 'panic'
+mode, esensord will simply exit with an error message when the watchdog is triggered.
+In the 'wipe' mode, triggering the watchdog will result in all stored measurement data
+to be deleted.
+
+Here is how to enable the clock watchdog in 'panic' mode with a trigger delta of
+30 minutes:
+
+		$ esensord \
+			--clock_watchdog panic \
+			--clock_watchdog_trigger_delta 30min \
+			...
+
+Note that esensord can not differentiate between having been shut down and re-started
+and a jump in system time. That means that shutting down the esensord service for a
+long period and then re-starting it will result in a false positive watchdog trigger.
+
+Hence the clock watchdog should only be used on systems that are expected to run
+24/7. Also, the watchdog trigger delta value should be set to a value that is larger
+than the longest expected downtime required for e.g. a software update.
 
 
 Design Goals
