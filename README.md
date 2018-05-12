@@ -90,22 +90,22 @@ Quotas are configured using command line flags when starting the sensorlog serve
 You can set a default quota value that applies to all sensors as well as a quota
 override for each individual sensor id.
 
-For example, to start sensorlog in a "whitelisting" configuration, set the default
+For example, to start sensorlogd in a "whitelisting" configuration, set the default
 quota to zero and then explicitly allocate storage for each sensor.
 
-    $ sensorlog \
+    $ sensorlogd \
         --listen_http localhost:8080 \
         --quota_default zero \
         --quota my.first.key:1MB \
         --quota some/other/key:4MB
 
-In the above configuration, the total disk space used by sensorlog will be bounded,
+In the above configuration, the total disk space used by sensorlogd will be bounded,
 but you can not insert data from sensors that are not pre-configured. The exact
 opposite configuration would be setting the default quota to infinite. This
 configuration allows you to store data from not previously known sensors, but
 may use an unbounded amount of disk space:
 
-    $ sensorlog \
+    $ sensorlogd \
         --listen_http localhost:8080 \
         --quota_default infinite
 
@@ -133,14 +133,14 @@ sensorlog will watch the system clock and trigger the watchdog once it detects a
 large jump in time.
 
 The watchdog can run in either of two modes called 'panic' and 'wipe'. In the 'panic'
-mode, sensorlog will simply exit with an error message when the watchdog is triggered.
+mode, sensorlogd will simply exit with an error message when the watchdog is triggered.
 In the 'wipe' mode, triggering the watchdog will result in all stored measurement data
 to be deleted.
 
 Here is how to enable the clock watchdog in 'panic' mode and set it up to trigger
 if the time jumps forwards by more than 7 days or backwards by more than 10 minutes.
 
-    $ sensorlog \
+    $ sensorlogd \
       --clock_watchdog panic \
       --clock_watchdog_trigger_forward 7days \
       --clock_watchdog_trigger_backward 10min \
@@ -203,7 +203,7 @@ All configuration options are set as command line arguments:
           Display the version of this binary and exit
 
     Examples:
-       $ sensorlog --datadir /var/sensordata --listen_http localhost:8080 --quota_default infinite
+       $ sensorlogd --datadir /var/sensordata --listen_http localhost:8080 --quota_default infinite
 
 
 

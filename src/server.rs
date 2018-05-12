@@ -40,21 +40,54 @@ const VERSION : &'static str = env!("CARGO_PKG_VERSION");
 const LOGLEVEL_DEFAULT : &'static str = "info";
 
 const USAGE : &'static str = "\
-Usage: $ sensorlog [OPTIONS]
-   --listen_http <addr>          Listen for HTTP connection on this address
-   --datadir <dir>               Set the data directory
-   --quota_default <quota>       Set the default storage quota for all sensors
-   --quota <sensor_id>:<quota>   Set the storage quota for a given sensor id
-   --daemonize                   Daemonize the server
-   --pidfile <file>              Write a PID file
-   --loglevel <level>            Minimum log level (default: INFO)
-   --[no]log_to_syslog           Do[n't] log to syslog
-   --[no]log_to_stderr           Do[n't] log to stderr
-   -?, --help                    Display this help text and exit
-   -V, --version                 Display the version of this binary and exit
+Usage: $ sensorlogd [OPTIONS]
+
+Options:
+
+   --listen_http=<addr>
+      Listen for HTTP connection on this address
+
+   --datadir=<dir>
+      Set the data directory
+
+   --quota_default=<quota>
+      Set the default storage quota for all sensors
+
+   --quota=<sensor_id>:<quota>
+       Set the storage quota for a given sensor id
+
+   --clock_watchdog=<mode>
+      Enable the clock watchdog. Modes are 'off', 'panic' and 'wipe'
+
+   --clock_watchdog_trigger_forward=<threshold>
+      Trigger the clock watchdog if the system time jumps forward by more than threshold
+
+   --clock_watchdog_trigger_backward=<threshold>
+      Trigger the clock watchdog if the system time jumps backward by more than threshold
+
+   --daemonize
+      Daemonize the server
+
+   --pidfile=<file>
+      Write a PID file
+
+   --loglevel <level>
+      Minimum log level (default: INFO)
+
+   --[no]log_to_syslog
+      Do[n't] log to syslog
+
+   --[no]log_to_stderr
+      Do[n't] log to stderr
+
+   -?, --help
+      Display this help text and exit
+
+   -V, --version
+      Display the version of this binary and exit
 
 Examples:
-   $ sensorlog --datadir /var/sensordata --listen_http localhost:8080 --quota_default infinite
+   $ sensorlogd --datadir /var/sensordata --listen_http localhost:8080 --quota_default infinite
 ";
 
 fn main() {
