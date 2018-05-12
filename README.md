@@ -1,6 +1,8 @@
 esensord
 ========
 
+[![Build Status](https://travis-ci.org/nyantec/esensord.svg?branch=master)](https://travis-ci.org/nyantec/esensord)
+
 esensord is a lightweight data logging service.
 
 The esensord binary is a standalone server program that allows you to store and
@@ -58,3 +60,41 @@ Note that the specified quota is applied to the total used storage space includi
 metadata and other overheads; i.e. the amount of storable payload measurement
 data is smaller than the configured quota.
 
+
+Build
+-----
+
+To build the `esensord` binary, run `cargo build`:
+
+    $ cd esensord
+    $ cargo build
+
+After you have made any changes to the code, run the test suite by executing
+`cargo test`:
+
+    $ cd esensord
+    $ cargo test
+
+
+License
+-------
+
+    Copyright © 2018 nyantec GmbH <oss@nyantec.com>
+
+    Authors:
+      Paul Asmuth <asm@nyantec.com>
+
+    Provided that these terms and disclaimer and all copyright notices
+    are retained or reproduced in an accompanying document, permission
+    is granted to deal in this work without restriction, including un‐
+    limited rights to use, publicly perform, distribute, sell, modify,
+    merge, give away, or sublicence.
+
+    This work is provided “AS IS” and WITHOUT WARRANTY of any kind, to
+    the utmost extent permitted by applicable law, neither express nor
+    implied; without malicious intent or gross negligence. In no event
+    may a licensor, author or contributor be held liable for indirect,
+    direct, other damage, loss, or other issues arising in any way out
+    of dealing in the work, even if advised of the possibility of such
+    damage or existence of a defect, except proven that it results out
+    of said person’s immediate fault when using the work as intended.
