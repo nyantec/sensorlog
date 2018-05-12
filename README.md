@@ -135,17 +135,19 @@ not have access to a true clock reference like GPS or the internet.
 Let's assume that we're running on such an offline system that requires the system
 time to be configured by a field operator. Consider the case where the operator
 incorrectly enters a system time far in the future and later, after noticing
-the mistake, changes the system time to the correct value.
+the mistake, changes the system time to the correct value. How should a service
+like esensord behave in this scenario?
 
-How should a service like esensord behave in this scenario? Simply continuing to
-serve the existing data with the incorrect timestamps on record is clearly not
-a good solution.
+Simply failing open and continuing to serve the existing data with the incorrect
+timestamps on record is clearly not a good solution.
 
-While one could come up with many strategies for re-writing the existing data to
-correct for the time offset, such a solution would be a bit expensive and error prone
+Another strategy would be to try to handle the scenario gracefully by re-writing
+the existing data to correct for the time offset. However, this solution was
+not chosen for esensord since it was deemed to be a bit expensive and error prone
 to implement in practice.
 
-Instead, esensord offers a 'clock watchdog'. When you enable the clock watchdog,
+Instead, esensord offers a 'clock watchdog' that allows you to fail closed whenever
+the system time changes in unexpected ways. When the clock watchdog is enabled,
 esensord will watch the system clock and trigger the watchdog once it detects a
 large jump in time (in either direction).
 
