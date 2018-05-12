@@ -18,8 +18,51 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
+extern crate getopts;
+extern crate env_logger;
+
+#[macro_use]
+extern crate log;
+
+use std::env;
+use std::io;
+use std::io::Write;
+
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
+fn print_usage() {
+
+}
 
 fn main() {
-    println!("Hello, world!");
+	// parse command line flags
+	let args : Vec<String> = env::args().collect();
+
+	let mut flag_cfg = getopts::Options::new();
+	flag_cfg.optopt("", "listen_http", "Listen for http connections", "PORT");
+	flag_cfg.optflag("h", "help", "Display this help text and exit");
+	flag_cfg.optflag("v", "version", "Display the version of this binary and exit");
+
+	let flags = match flag_cfg.parse(&args[1..]) {
+		Ok(m) => { m }
+		Err(f) => {
+			writeln!(
+					&mut std::io::stderr(),
+					"invalid command line options: {}",
+					f.to_string()).unwrap();
+
+			std::process::exit(1);
+		}
+	};
+
+	if flags.opt_present("h") {
+		print_usage();
+		return;
+	}
+
+	// start logger
+	env_logger::init();
+	info!("esensord v{}", VERSION);
+
 }
 

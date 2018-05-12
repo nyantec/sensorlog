@@ -12,3 +12,6 @@ name = "esensorctl"
 path = "src/cli.rs"
 
 [dependencies]
+getopts = "*"
+log = "*"
+env_logger = "*"
