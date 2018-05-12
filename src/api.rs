@@ -4,12 +4,13 @@ use serde::{Serialize, Deserialize};
 pub struct StoreMeasurementRequest {
 	time: Option<u64>,
 	sensor_id: String,
-	data: Vec<u8>,
+	data: String,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct StoreMeasurementResponse {}
 
-pub fn store_measurement(req: &StoreMeasurementRequest) -> Result<StoreMeasurementResponse, ::Error> {
+pub fn store_measurement(req: StoreMeasurementRequest) -> Result<StoreMeasurementResponse, ::Error> {
 	return Ok(StoreMeasurementResponse{});
 }
 
