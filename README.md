@@ -133,25 +133,6 @@ storage actually available for measurement payload data is bit less than the
 configured quota.
 
 
-HTTP API
---------
-
-The HTTP+JSON API is very simple. Below is a list of all API methods. For more
-detailed documentation on the API please [refer to the the documentation](https://esensord.org)
-
-    POST /api/v1/store_measurement
-         Store a measurement for a given sensor
-
-    POST /api/v1/fetch_last_measurement
-         Retrieve the most recent measurement from a given sensor
-
-    POST /api/v1/fetch_measurements
-         Retrieve all measurements from a given sensor in the specified time range
-
-     GET /ping
-         Responds with 'pong'
-
-
 Monotonic Time
 --------------
 
@@ -206,6 +187,25 @@ long period and then re-starting it will result in a false positive watchdog tri
 Hence the clock watchdog should only be used on systems that are expected to run
 24/7. Also, the watchdog trigger delta value should be set to a value that is larger
 than the longest expected downtime required for e.g. a software update.
+
+
+HTTP API
+--------
+
+The HTTP+JSON API is very simple. Below is a list of all API methods. For more
+detailed documentation on the API please [refer to the the documentation](https://esensord.org)
+
+    POST /api/v1/store_measurement
+         Store a measurement for a given sensor
+
+    POST /api/v1/fetch_last_measurement
+         Retrieve the most recent measurement from a given sensor
+
+    POST /api/v1/fetch_measurements
+         Retrieve all measurements from a given sensor in the specified time range
+
+     GET /ping
+         Responds with 'pong'
 
 
 Design Goals
