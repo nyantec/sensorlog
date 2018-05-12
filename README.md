@@ -23,3 +23,38 @@ goals and other competing goals we have to make a tradeoff. Hence, esensord does
 not feature a particularly high operation throughput, low operation latency or minimal
 resource usage.
 
+
+Retention & Quotas
+------------------
+
+The retention and garbage collection system of esensord is based around a simple
+storage quota that is assigned to each `sensor_id`. Quotas are expressed in bytes
+and rotation of measurements is always first-in, first-out.
+
+Quotas are configured using command line flags when starting the esensord server.
+You can set a default quota value that applies to all sensors as well as a quota
+override for each individual sensor id.
+
+For example, to start esensord in a "whitelisting" configuration, set the default
+quota to zero and then explicitly allocate storage for each sensor.
+
+    $ esensord \
+        --listen_http localhost:8080 \
+        --quota_default zero \
+        --quota my.first.key:1MB \
+        --quota some/other/key:4MB
+
+In the above configuration, the total disk space used by esensord will be bounded,
+but you can not insert data from sensors that are not pre-configured. The exact
+opposite configuration would be setting the default quota to infinite. This
+configuration allows you to store data from not previously known sensors, but
+may use an unbounded amount of disk space:
+
+    $ esensord \
+        --listen_http localhost:8080 \
+        --quota_default infinite
+
+Note that the specified quota is applied to the total used storage space including
+metadata and other overheads; i.e. the amount of storable payload measurement
+data is smaller than the configured quota.
+
