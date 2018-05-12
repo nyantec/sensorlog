@@ -31,6 +31,8 @@ pub struct StoreMeasurementRequest {
 pub struct StoreMeasurementResponse {}
 
 pub fn store_measurement(req: StoreMeasurementRequest) -> Result<StoreMeasurementResponse, ::Error> {
+	debug!("Storing measurement: sensor_id={}", req.sensor_id);
+
 	return Ok(StoreMeasurementResponse{});
 }
 

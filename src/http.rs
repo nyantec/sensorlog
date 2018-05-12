@@ -40,6 +40,7 @@ pub fn http_server_start(opts: ServerOptions) -> bool {
 		api_handler: APIHandler {},
 	};
 
+	info!("Listening for HTTP connections on {}", &opts.listen_addr);
 	Iron::new(dispatch).http(&*opts.listen_addr).unwrap();
 	return true;
 }

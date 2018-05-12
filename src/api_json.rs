@@ -38,6 +38,8 @@ pub fn call_str(method: &str, req: &str) -> Result<String, ::Error> {
 }
 
 pub fn call_json(method: &str, req: &json::Value) -> Result<json::Value, ::Error> {
+	debug!("Executing API request: method={}", method);
+
 	return match method {
 		"store_measurement" => call(&::api::store_measurement, req),
 		_ => Err(err_user!("invalid API method"))
