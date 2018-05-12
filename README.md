@@ -258,6 +258,11 @@ Caveats
   configured quota. Also, the amount of actual disk space used is a bit more
   than the configured quota once filesystem overheads are accounted for.
 
+- The clock watchdog may fail to trigger in an A-B-A scenario where the system time
+  changes very quickly. However, this is not a problem in practice since the only case
+  in which the watchdog fails to trigger is the case in which no measurements
+  were stored or retrieved during the intermittent clock change.
+
 
 Alternatives Considered
 -----------------------
