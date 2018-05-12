@@ -81,17 +81,50 @@ The esensord program is the main server program and the second esensorctl progra
 is a simple command line client.
 
     Usage: $ esensord [OPTIONS]
-       --listen_http <addr>          Listen for HTTP connection on this address
-       --datadir <dir>               Set the data directory
-       --quota_default <quota>       Set the default storage quota for all sensors
-       --quota <sensor_id>:<quota>   Set the storage quota for a given sensor id
-       --daemonize                   Daemonize the server
-       --pidfile <file>              Write a PID file
-       --loglevel <level>            Minimum log level (default: INFO)
-       --[no]log_to_syslog           Do[n't] log to syslog
-       --[no]log_to_stderr           Do[n't] log to stderr
-       -?, --help                    Display this help text and exit
-       -V, --version                 Display the version of this binary and exit
+
+    Options:
+
+       --listen_http=<addr>
+          Listen for HTTP connection on this address
+
+       --datadir=<dir>
+          Set the data directory
+
+       --quota_default=<quota>
+          Set the default storage quota for all sensors
+
+       --quota=<sensor_id>:<quota>
+           Set the storage quota for a given sensor id
+
+       --clock_watchdog=<mode>
+          Enable the clock watchdog. Modes are 'off', 'panic' and 'wipe'
+
+       --clock_watchdog_trigger_forward=<threshold>
+          Trigger the clock watchdog if the system time jumps forward by more than threshold
+
+       --clock_watchdog_trigger_backward=<threshold>
+          Trigger the clock watchdog if the system time jumps backward by more than threshold
+
+       --daemonize
+          Daemonize the server
+
+       --pidfile=<file>
+          Write a PID file
+
+       --loglevel <level>
+          Minimum log level (default: INFO)
+
+       --[no]log_to_syslog
+          Do[n't] log to syslog
+
+       --[no]log_to_stderr
+          Do[n't] log to stderr
+
+       -?, --help
+          Display this help text and exit
+
+       -V, --version
+          Display the version of this binary and exit
 
     Examples:
        $ esensord --datadir /var/sensordata --listen_http localhost:8080 --quota_default infinite
@@ -155,38 +188,39 @@ not have access to a true clock reference like GPS or the internet.
 Let's assume that we're running on such an offline system that requires the system
 time to be configured by a field operator. Consider the case where the operator
 incorrectly enters a system time far in the future and later, after noticing
-the mistake, re-configures the system time to the correct value.
+the mistake, changes the system time to the correct value.
 
-How should a service like esensord handle such a scenario? Simply continuing to
-serve the existing data with the timestamps on record is clearly incorrect. While
-one could come up with many strategies for re-writing the existing data to correct
-for the time offset, such a solution would be very expensive and a bit error prone
+How should a service like esensord behave in this scenario? Simply continuing to
+serve the existing data with the incorrect timestamps on record is clearly not
+a good solution.
+
+While one could come up with many strategies for re-writing the existing data to
+correct for the time offset, such a solution would be a bit expensive and error prone
 to implement in practice.
 
-To solve this problem, esensord offers a 'clock watchdog'. When you enable
-the clock watchdog, esensord will watch the system clock and trigger the watchdog
-once it detects a large jump in time (in either direction).
+Instead, esensord offers a 'clock watchdog'. When you enable the clock watchdog,
+esensord will watch the system clock and trigger the watchdog once it detects a
+large jump in time (in either direction).
 
 The watchdog can run in either of two modes called 'panic' and 'wipe'. In the 'panic'
 mode, esensord will simply exit with an error message when the watchdog is triggered.
 In the 'wipe' mode, triggering the watchdog will result in all stored measurement data
 to be deleted.
 
-Here is how to enable the clock watchdog in 'panic' mode with a trigger delta of
-30 minutes:
+Here is how to enable the clock watchdog in 'panic' mode and set it up to trigger
+if the time jumps forwards by more than 7 days or backwards by more than 10 minutes.
 
     $ esensord \
       --clock_watchdog panic \
-      --clock_watchdog_trigger_delta 30min \
+      --clock_watchdog_trigger_forward 7days \
+      --clock_watchdog_trigger_backward 10min \
       ...
 
-Note that esensord can not differentiate between having been shut down and re-started
-and a jump in system time. That means that shutting down the esensord service for a
-long period and then re-starting it will result in a false positive watchdog trigger.
-
-Hence the clock watchdog should only be used on systems that are expected to run
-24/7. Also, the watchdog trigger delta value should be set to a value that is larger
-than the longest expected downtime required for e.g. a software update.
+Note that esensord can not differentiate between having been re-started and a forward
+jump in system time. That means that shutting down the esensord service for a long period
+and then re-starting could result in a false positive watchdog trigger. To prevent
+this, the clock watchdog foward trigger value should bebe set to a value that is larger
+than the longest expected downtime.
 
 
 HTTP API
