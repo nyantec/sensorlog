@@ -28,7 +28,8 @@ use std::env;
 use std::io;
 use std::io::Write;
 
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION : &'static str = env!("CARGO_PKG_VERSION");
+const LOGLEVEL_DEFAULT : &'static str = "info";
 
 fn print_usage() {
 
@@ -40,6 +41,7 @@ fn main() {
 
 	let mut flag_cfg = getopts::Options::new();
 	flag_cfg.optopt("", "listen_http", "Listen for http connections", "PORT");
+	flag_cfg.optopt("", "loglevel", "Loglevel", "LEVEL");
 	flag_cfg.optflag("h", "help", "Display this help text and exit");
 	flag_cfg.optflag("v", "version", "Display the version of this binary and exit");
 
@@ -61,8 +63,11 @@ fn main() {
 	}
 
 	// start logger
+	let loglevel = flags.opt_str("loglevel").unwrap_or(LOGLEVEL_DEFAULT.into());
+	std::env::set_var("RUST_LOG", loglevel);
 	env_logger::init();
-	info!("esensord v{}", VERSION);
 
+	// start server
+	info!("esensord v{}", VERSION);
 }
 
