@@ -28,11 +28,15 @@ pub struct StoreMeasurementRequest {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct StoreMeasurementResponse {}
+pub struct StoreMeasurementResponse {
+	success: bool
+}
 
 pub fn store_measurement(req: StoreMeasurementRequest) -> Result<StoreMeasurementResponse, ::Error> {
 	debug!("Storing measurement: sensor_id={}", req.sensor_id);
 
-	return Ok(StoreMeasurementResponse{});
+	return Ok(StoreMeasurementResponse{
+		success: true
+	});
 }
 
