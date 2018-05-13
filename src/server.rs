@@ -27,13 +27,15 @@ extern crate serde_json;
 #[macro_use] extern crate serde_derive;
 
 #[macro_use] mod error;
-mod http;
 mod api;
 mod api_json;
+mod http;
+mod logfile_map;
 
 use std::env;
 use std::io;
 use std::io::Write;
+use std::path::Path;
 use ::error::{Error,ErrorCode};
 
 const VERSION : &'static str = env!("CARGO_PKG_VERSION");
@@ -128,13 +130,21 @@ fn main() {
 
 	env_logger::init();
 
-	// start server
+	// open logfile map
 	info!("sensorlog v{}", VERSION);
 
 	let datadir = match flags.opt_str("datadir") {
 		Some(v) => v,
 		None => {
 			writeln!(&mut std::io::stderr(), "missing option: --datadir").unwrap();
+			std::process::exit(1);
+		}
+	};
+
+	let logfile_map = match logfile_map::LogfileMap::open(&Path::new(&datadir)) {
+		Ok(v) => v,
+		Err(e) => {
+			writeln!(&mut std::io::stderr(), "error while opening database: {}", e).unwrap();
 			std::process::exit(1);
 		}
 	};
