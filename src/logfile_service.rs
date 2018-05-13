@@ -18,28 +18,19 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use serde::{Serialize, Deserialize};
-use ::logfile_service::LogfileService;
+use ::logfile_map::LogfileMap;
 
-#[derive(Serialize, Deserialize)]
-pub struct StoreMeasurementRequest {
-	time: Option<u64>,
-	sensor_id: String,
-	data: String,
+pub struct LogfileService {
+  pub logfile_map: LogfileMap,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct StoreMeasurementResponse {
-	success: bool
-}
+impl LogfileService {
 
-pub fn store_measurement(
-		logfile_service: &LogfileService,
-		req: StoreMeasurementRequest) -> Result<StoreMeasurementResponse, ::Error> {
-	debug!("Storing measurement: sensor_id={}", req.sensor_id);
+  pub fn new(logfile_map: LogfileMap) -> LogfileService {
+    return LogfileService {
+      logfile_map: logfile_map
+    };
+  }
 
-	return Ok(StoreMeasurementResponse{
-		success: true
-	});
 }
 
