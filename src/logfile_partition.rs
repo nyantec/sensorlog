@@ -18,7 +18,11 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-pub struct LogfilePartition {}
+use ::measure::Measurement;
+
+pub struct LogfilePartition {
+
+}
 
 impl LogfilePartition {
 
@@ -31,9 +35,18 @@ impl LogfilePartition {
 
 	pub fn append_measurement(
 			&self,
-			time: u64,
-			data: &[u8]) -> Result<(), ::Error> {
-		return Err(err_server!("nyi"));
+			measurement: &Measurement) -> Result<(), ::Error> {
+		debug!("Storing new measurement; time={}", measurement.time);
+		return Ok(());
+	}
+
+	pub fn delete(&self) -> Result<(), ::Error> {
+		debug!("Deleting logfile partition");
+		return Ok(());
+	}
+
+	pub fn get_storage_used_bytes(&self) -> u64 {
+		return 0;
 	}
 
 }

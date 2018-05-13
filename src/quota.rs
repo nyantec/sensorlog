@@ -43,4 +43,12 @@ impl StorageQuota {
 		};
 	}
 
+	pub fn is_sufficient_bytes(&self, bytes: u64) -> bool {
+		return match self {
+			&StorageQuota::Unlimited => true,
+			&StorageQuota::Limited{limit_bytes} => limit_bytes >= bytes,
+			&StorageQuota::Zero => false,
+		};
+	}
+
 }

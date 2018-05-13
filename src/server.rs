@@ -37,6 +37,7 @@ mod logfile_map;
 mod logfile_partition;
 mod logfile_service;
 mod quota;
+mod measure;
 
 use std::env;
 use std::io::Write;
@@ -157,6 +158,7 @@ fn run() -> Result<(), ::Error> {
 		Err(e) => return Err(err_server!("error while opening database: {}", e))
 	};
 
+	// configure storage quotas
 	logfile_map.set_default_storage_quota(
 			quota::StorageQuota::parse_string(
 					&match &flags.opt_str("quota_default") {

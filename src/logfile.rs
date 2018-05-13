@@ -18,12 +18,19 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use std::sync::{Arc,Mutex};
+use std::sync::{Arc,Mutex,RwLock};
+use std::process;
 use ::logfile_partition::LogfilePartition;
 use ::quota::StorageQuota;
+use ::measure::Measurement;
 
 pub struct Logfile {
-	storage_quota: Mutex<StorageQuota>
+	storage_quota: Mutex<StorageQuota>,
+	partition_map: Arc<RwLock<LogfilePartitionMap>>,
+}
+
+pub struct LogfilePartitionMap {
+	partitions: Vec<LogfilePartition>,
 }
 
 impl Logfile {
@@ -35,7 +42,10 @@ impl Logfile {
 
 		debug!("Creating new logfile");
 		let logfile = Logfile {
-			storage_quota: Mutex::new(storage_quota)
+			storage_quota: Mutex::new(storage_quota),
+			partition_map: Arc::new(RwLock::new(LogfilePartitionMap {
+				partitions: Vec::<LogfilePartition>::new(),
+			}))
 		};
 
 		return Ok(logfile);
@@ -43,9 +53,61 @@ impl Logfile {
 
 	pub fn append_measurement(
 			&self,
-			time: &Option<u64>,
-			data: &[u8]) -> Result<(), ::Error> {
-		return Err(err_server!("nyi"));
+			measurement: &Measurement) -> Result<(), ::Error> {
+		let quota = self.get_storage_quota();
+		if !quota.is_sufficient_bytes(measurement.get_encoded_size() as u64) {
+			return Err(err_quota!("insufficient quota"));
+		}
+
+		// lock the partition map
+		let mut pmap_locked = match self.partition_map.write() {
+			Ok(l) => l,
+			Err(_) => {
+				error!("lock is poisoned; aborting...");
+				process::abort();
+			}
+		};
+
+		// drop partitions from the tail until the quota is met
+		let mut required_bytes : u64 =
+				measurement.get_encoded_size() +
+				pmap_locked
+						.partitions
+						.iter()
+						.fold(0, |s, x| s + x.get_storage_used_bytes());
+
+		while !quota.is_sufficient_bytes(required_bytes) {
+			if pmap_locked.partitions.len() == 0 {
+				return Err(err_server!("corrupt partition map"));
+			}
+
+			pmap_locked.partitions[0].delete()?;
+			let deleted_partition = pmap_locked.partitions.remove(0);
+			required_bytes -= deleted_partition.get_storage_used_bytes();
+		}
+
+		// append a new head partition if the current head partition is full
+		let head_partition_full = match pmap_locked.partitions.last() {
+			Some(p) => false, // FIXME
+			None => true,
+		};
+
+		if head_partition_full {
+			let new_partition = LogfilePartition::create()?;
+			pmap_locked.partitions.push(new_partition);
+		}
+
+		// insert the new measurement into the new head partition
+		let head_partition = match pmap_locked.partitions.last_mut() {
+			Some(p) => p,
+			None => return Err(err_server!("corrupt partition map")),
+		};
+
+		return head_partition.append_measurement(measurement);
+	}
+
+	pub fn get_storage_quota(&self) -> StorageQuota {
+		return self.storage_quota.lock().unwrap().clone();
 	}
 
 	pub fn set_storage_quota(&self, quota: StorageQuota) {
