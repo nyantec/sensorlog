@@ -18,37 +18,27 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use std::mem::transmute;
+use std::path::Path;
+use std::fs;
+use std::io::{Read,Write,Seek,SeekFrom};
+use ::logfile_id::LogfileID;
+use ::logfile_partition::LogfilePartition;
+use ::measure::Measurement;
 
-#[derive(Debug, Clone)]
-#[derive(Serialize, Deserialize)]
-pub struct Measurement {
-	pub time: u64,
-	pub data: Vec<u8>
+pub struct LogfileReader<'a> {
+	partitions: &'a Vec<LogfilePartition>,
 }
 
-impl Measurement {
+impl<'a> LogfileReader<'a> {
 
-	pub fn encode(&self) -> Vec<u8> {
-		let time_encoded : [u8; 8] = unsafe {
-			transmute(self.time.to_le())
+	pub fn new(partitions: &'a Vec<LogfilePartition>) -> LogfileReader<'a> {
+		return LogfileReader {
+			partitions: partitions
 		};
-
-		let data_size_encoded : [u8; 4] = unsafe {
-			transmute((self.data.len() as u32).to_le())
-		};
-
-		let mut encoded = self.data.clone();
-		encoded.extend_from_slice(&data_size_encoded);
-		encoded.extend_from_slice(&time_encoded);
-
-		return encoded;
 	}
 
-	pub fn get_encoded_size(&self) -> u64 {
-		return (self.data.len() + 12) as u64;
+	pub fn fetch_last_measurement(&self) -> Result<Option<Measurement>, ::Error> {
+		return Ok(None);
 	}
-
 
 }
-

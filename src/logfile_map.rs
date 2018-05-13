@@ -53,7 +53,7 @@ impl LogfileMap {
 		});
 	}
 
-	pub fn lookup(self: &LogfileMap, logfile_id: &str) -> Option<Arc<Logfile>> {
+	pub fn lookup(self: &LogfileMap, logfile_id: &LogfileID) -> Option<Arc<Logfile>> {
 		let logfiles_locked = match self.logfiles.read() {
 			Ok(l) => l,
 			Err(_) => {
@@ -62,7 +62,9 @@ impl LogfileMap {
 			}
 		};
 
-		return logfiles_locked.get(logfile_id).map(|l| l.clone());
+		return logfiles_locked
+				.get(&logfile_id.get_string())
+				.map(|l| l.clone());
 	}
 
 	pub fn lookup_or_create(
@@ -70,7 +72,7 @@ impl LogfileMap {
 			logfile_id: &LogfileID) -> Result<Arc<Logfile>, ::Error> {
 		// rust RWLocks don't support upgrades. so we implement an optimistic
 		// fast path using a read lock
-		if let Some(logfile) = self.lookup(&logfile_id.get_string()) {
+		if let Some(logfile) = self.lookup(&logfile_id) {
 			return Ok(logfile);
 		}
 

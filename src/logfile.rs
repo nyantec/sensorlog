@@ -26,6 +26,7 @@ use ::logfile_id::LogfileID;
 use ::logfile_config::LogfileConfig;
 use ::logfile_partition::LogfilePartition;
 use ::logfile_transaction::LogfileTransaction;
+use ::logfile_reader::LogfileReader;
 use ::quota::StorageQuota;
 use ::measure::Measurement;
 
@@ -154,6 +155,19 @@ impl Logfile {
 
 		// commit the transaction to disk
 		return storage_locked.commit();
+	}
+
+	pub fn fetch_last_measurement(&self) -> Result<Option<Measurement>, ::Error> {
+		let mut storage_locked = match self.storage.read() {
+			Ok(l) => l,
+			Err(_) => {
+				error!("lock is poisoned; aborting...");
+				process::abort();
+			}
+		};
+
+		let reader = LogfileReader::new(&storage_locked.partitions);
+		return reader.fetch_last_measurement();
 	}
 
 }

@@ -1,4 +1,5 @@
-- [ ] read operations
+- [ ] time and byte types
+- [ ] cli
 - [ ] store checksums?
 - [ ] clock watchdog
 - [ ] daemonize/pidfile flags

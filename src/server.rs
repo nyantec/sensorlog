@@ -40,6 +40,7 @@ mod logfile_directory;
 mod logfile_map;
 mod logfile_partition;
 mod logfile_transaction;
+mod logfile_reader;
 mod logfile_writer;
 mod quota;
 mod measure;
