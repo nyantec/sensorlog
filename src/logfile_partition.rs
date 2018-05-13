@@ -19,6 +19,7 @@
  * of said person’s immediate fault when using the work as intended.
  */
 use std::path::{Path,PathBuf};
+use std::fs;
 use ::measure::Measurement;
 
 pub struct LogfilePartition {
@@ -31,16 +32,15 @@ pub struct LogfilePartition {
 impl LogfilePartition {
 
 	pub fn create(path: &Path, time: u64) -> Result<LogfilePartition, ::Error> {
-		info!("Creating new logfile partition");
-
-		let part = LogfilePartition {
+		let partition = LogfilePartition {
 			path: path.to_owned(),
 			time_head: time,
 			time_tail: time,
 			offset: 0,
 		};
 
-		return Ok(part);
+		info!("Creating new logfile partition; path={:?}", partition.get_file_path());
+		return Ok(partition);
 	}
 
 	pub fn open(
@@ -72,7 +72,7 @@ impl LogfilePartition {
 				self.offset);
 
 		self.offset += ::logfile_writer::append(
-				&self.path.join(self.get_file_name()),
+				&self.get_file_path(),
 				self.offset,
 				measurement)?;
 
@@ -81,12 +81,17 @@ impl LogfilePartition {
 	}
 
 	pub fn delete(&self) -> Result<(), ::Error> {
-		info!("Deleting logfile partition");
+		info!("Deleting logfile partition; path={:?}", self.get_file_path());
+		fs::remove_file(self.get_file_path())?;
 		return Ok(());
 	}
 
 	pub fn get_file_name(&self) -> String {
 		return format!("{}.log", self.time_tail);
+	}
+
+	pub fn get_file_path(&self) -> PathBuf {
+		return self.path.join(self.get_file_name()).to_owned();
 	}
 
 	pub fn get_file_offset(&self) -> u64 {
