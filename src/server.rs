@@ -34,6 +34,7 @@ mod api_json;
 mod http;
 mod logfile;
 mod logfile_map;
+mod logfile_partition;
 mod logfile_service;
 
 use std::env;

@@ -21,7 +21,7 @@
 use std;
 
 #[derive(Debug)]
-pub enum ErrorCode { InternalServerError, NotFound, BadRequest }
+pub enum ErrorCode { InternalServerError, NotFound, BadRequest, QuotaError }
 
 #[derive(Debug)]
 pub struct Error {
@@ -37,6 +37,11 @@ macro_rules! err_server {
 #[allow(unused_macros)]
 macro_rules! err_user {
 	($($arg:tt)*) => (::Error::new(&format!($($arg)*), ::ErrorCode::BadRequest))
+}
+
+#[allow(unused_macros)]
+macro_rules! err_quota {
+	($($arg:tt)*) => (::Error::new(&format!($($arg)*), ::ErrorCode::QuotaError))
 }
 
 impl Error {

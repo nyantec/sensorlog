@@ -165,15 +165,19 @@ impl Service for HTTPHandler {
 						::ErrorCode::BadRequest =>
 								Response::new()
 										.with_status(StatusCode::BadRequest)
-										.with_body(err.message),
+										.with_body(err.to_string()),
 						::ErrorCode::NotFound =>
 								Response::new()
 										.with_status(StatusCode::NotFound)
-										.with_body(err.message),
+										.with_body(err.to_string()),
 						::ErrorCode::InternalServerError =>
 								Response::new()
 										.with_status(StatusCode::InternalServerError)
-										.with_body(err.message),
+										.with_body(err.to_string()),
+						::ErrorCode::QuotaError =>
+								Response::new()
+										.with_status(StatusCode::Forbidden)
+										.with_body(err.to_string()),
 					}
 				}
 			};

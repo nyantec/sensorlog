@@ -1,7 +1,7 @@
 /**
  * Copyright © 2018 nyantec GmbH <oss@nyantec.com>
  * Authors:
- *   Paul Asmuth <asm@nyantec.com>
+ *	 Paul Asmuth <asm@nyantec.com>
  *
  * Provided that these terms and disclaimer and all copyright notices
  * are retained or reproduced in an accompanying document, permission
@@ -18,30 +18,23 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use ::logfile_service::LogfileService;
+pub struct LogfilePartition {}
 
-#[derive(Serialize, Deserialize)]
-pub struct StoreMeasurementRequest {
-	time: Option<u64>,
-	sensor_id: String,
-	data: String,
-}
+impl LogfilePartition {
 
-#[derive(Serialize, Deserialize)]
-pub struct StoreMeasurementResponse {
-	success: bool
-}
+	pub fn create() -> Result<LogfilePartition, ::Error> {
+		debug!("Creating new logfile partition");
 
-pub fn store_measurement(
-		logfile_service: &LogfileService,
-		req: StoreMeasurementRequest) -> Result<StoreMeasurementResponse, ::Error> {
-	debug!("Storing measurement: sensor_id={}", req.sensor_id);
+		let part = LogfilePartition {};
+		return Ok(part);
+	}
 
-	let logfile = logfile_service.logfile_map.lookup_or_create(&req.sensor_id)?;
-	logfile.append_measurement(&req.time, req.data.as_bytes())?;
+	pub fn append_measurement(
+			&self,
+			time: u64,
+			data: &[u8]) -> Result<(), ::Error> {
+		return Err(err_server!("nyi"));
+	}
 
-	return Ok(StoreMeasurementResponse {
-		success: true
-	});
 }
 

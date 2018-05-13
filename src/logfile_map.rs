@@ -22,11 +22,12 @@ use std::collections::HashMap;
 use std::sync::{Arc,RwLock};
 use std::path::{Path,PathBuf};
 use std::process;
-use ::logfile::Logfile;
+use ::logfile::{Logfile, StorageQuota};
 
 pub struct LogfileMap {
 	path: PathBuf,
 	logfiles: Arc<RwLock<HashMap<String, Arc<Logfile>>>>,
+	quota_default: StorageQuota,
 }
 
 impl LogfileMap {
@@ -35,6 +36,7 @@ impl LogfileMap {
 		return LogfileMap {
 			path: path.to_owned(),
 			logfiles: Arc::new(RwLock::new(HashMap::<String, Arc<Logfile>>::new())),
+			quota_default: StorageQuota { bytes_max: 0 },
 		};
 	}
 
@@ -81,9 +83,22 @@ impl LogfileMap {
 		}
 
 		// if the logfile doesn't exist yet, create a new one
-		let logfile = Arc::new(Logfile::create()?);
+		let logfile = Arc::new(Logfile::create(self.quota_default.clone())?);
 		logfiles_locked.insert(logfile_id.to_string(), logfile.clone());
 		return Ok(logfile);
+	}
+
+	pub fn set_storage_quota(
+			&mut self,
+			logfile_id: &str,
+			quota: StorageQuota) -> Result<(), ::Error> {
+		let logfile = self.lookup_or_create(logfile_id)?;
+		logfile.set_storage_quota(quota);
+		return Ok(());
+	}
+
+	pub fn set_default_storage_quota(&mut self, quota: StorageQuota) {
+		self.quota_default = quota;
 	}
 
 }
