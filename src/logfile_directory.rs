@@ -25,16 +25,22 @@ use ::logfile::Logfile;
 use ::logfile_id::{LogfileID, LogfilePath};
 use ::logfile_config::LogfileConfig;
 
+const DATABASE_PATH : &'static str = "db";
+
 pub struct LogfileDirectory {
 	pub path: PathBuf,
 }
 
 impl LogfileDirectory {
 
-	pub fn new(path: &Path) -> LogfileDirectory {
-		return LogfileDirectory {
+	pub fn open(path: &Path) -> Result<LogfileDirectory, ::Error> {
+		fs::create_dir_all(path.join(DATABASE_PATH))?;
+
+		let logfile_directory =  LogfileDirectory {
 			path: path.to_owned(),
 		};
+
+		return Ok(logfile_directory);
 	}
 
 	pub fn create_logfile(
@@ -42,7 +48,7 @@ impl LogfileDirectory {
 			logfile_id: &LogfileID,
 			logfile_config: &LogfileConfig) -> Result<Arc<Logfile>, ::Error> {
 		let logfile_path = self.path
-				.join("db")
+				.join(DATABASE_PATH)
 				.join(logfile_id.get_path().get_file_name());
 
 		let logfile = Logfile::create(
@@ -58,7 +64,7 @@ impl LogfileDirectory {
 			logfile_path: &LogfilePath,
 			logfile_config: &LogfileConfig) -> Result<Option<Arc<Logfile>>, ::Error> {
 		let logfile_path = self.path
-				.join("db")
+				.join(DATABASE_PATH)
 				.join(&logfile_path.get_file_name());
 
 		let logfile = Logfile::open(

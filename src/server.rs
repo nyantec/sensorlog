@@ -47,7 +47,7 @@ mod time;
 
 use std::env;
 use std::io::Write;
-use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
 use ::error::{Error,ErrorCode};
 
@@ -176,14 +176,19 @@ fn run() -> Result<(), ::Error> {
 				});
 	}
 
-	// open database
+	// open data dir
 	let datadir = match flags.opt_str("datadir") {
-		Some(v) => v,
+		Some(v) => PathBuf::from(v),
 		None => return Err(err_user!("missing option: --datadir"))
 	};
 
+	if !datadir.exists() {
+		return Err(err_user!("data directory does not exist: {:?}", datadir));
+	}
+
+	// open logfile map
 	let logfile_map = logfile_map::LogfileMap::open(
-			logfile_directory::LogfileDirectory::new(&Path::new(&datadir)),
+			logfile_directory::LogfileDirectory::open(&datadir)?,
 			logfile_config);
 
 	let logfile_map = match logfile_map {
