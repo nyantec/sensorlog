@@ -43,6 +43,19 @@ impl LogfilePartition {
 		return Ok(part);
 	}
 
+	pub fn open(
+			path: &Path,
+			time_head: u64,
+			time_tail: u64,
+			offset: u64) -> LogfilePartition {
+		return LogfilePartition {
+			path: path.to_owned(),
+			time_head: time_head,
+			time_tail: time_tail,
+			offset: offset,
+		};
+	}
+
 	pub fn append_measurement(
 			&mut self,
 			measurement: &Measurement) -> Result<(), ::Error> {

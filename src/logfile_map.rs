@@ -40,10 +40,13 @@ impl LogfileMap {
 	pub fn open(
 			directory: LogfileDirectory,
 			config: LogfileConfig) -> Result<LogfileMap, ::Error> {
+		let mut logfile_map = HashMap::<String, Arc<Logfile>>::new();
+
 		info!("Opening logfile database at {:?}", directory.path);
-		let logfile_map = HashMap::<String, Arc<Logfile>>::new();
-		for logfile_id in directory.list_logfiles() {
-			// TODO: open logfile
+		for logfile in directory.list_logfiles()? {
+			if let Some(logfile) = directory.load_logfile(&logfile, &config)? {
+				logfile_map.insert(logfile.get_id().get_string(), logfile);
+			}
 		}
 
 		return Ok(LogfileMap {

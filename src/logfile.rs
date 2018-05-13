@@ -55,7 +55,7 @@ impl Logfile {
 			return Err(err_quota!("insufficient quota"));
 		}
 
-		debug!("Creating new logfile");
+		debug!("Creating new logfile; id={:?}", id);
 		fs::create_dir_all(path)?;
 
 		let logfile = Logfile {
@@ -70,6 +70,43 @@ impl Logfile {
 		};
 
 		return Ok(logfile);
+	}
+
+	pub fn open(
+			path: &Path,
+			config: &LogfileConfig) -> Result<Option<Logfile>, ::Error> {
+		let transaction_path = path.join(TRANSACTION_FILE_NAME).to_owned();
+		let transaction = LogfileTransaction::read_file(&transaction_path)?;
+		debug!("Loading logfile; id={:?}", transaction.id);
+
+		let logfile_id = LogfileID::from_string(transaction.id);
+		let mut logfile_partitions = Vec::<LogfilePartition>::new();
+
+		for partition in transaction.partitions {
+			logfile_partitions.push(
+					LogfilePartition::open(
+							path,
+							partition.time_head,
+							partition.time_tail,
+							partition.offset));
+		}
+
+		let logfile = Logfile {
+			storage: Arc::new(RwLock::new(LogfileStorage {
+				id: logfile_id.clone(),
+				path: path.to_owned(),
+				storage_quota: config.get_storage_quota_for(&logfile_id),
+				partitions: logfile_partitions,
+				partitions_deleted: Vec::<LogfilePartition>::new(),
+				partition_size_bytes: config.get_partition_size_for(&logfile_id),
+			})),
+		};
+
+		return Ok(Some(logfile));
+	}
+
+	pub fn get_id(&self) -> LogfileID {
+		return self.storage.read().unwrap().id.clone();
 	}
 
 	pub fn append_measurement(
@@ -113,18 +150,6 @@ impl Logfile {
 
 		// commit the transaction to disk
 		return storage_locked.commit();
-	}
-
-	pub fn get_storage_quota(&self) -> StorageQuota {
-		return self.storage.read().unwrap().storage_quota.clone();
-	}
-
-	pub fn set_storage_quota(&self, quota: StorageQuota) {
-		self.storage.write().unwrap().storage_quota = quota;
-	}
-
-	pub fn set_partition_size_bytes(&mut self, partition_size: u64) {
-		self.storage.write().unwrap().partition_size_bytes = partition_size;
 	}
 
 }

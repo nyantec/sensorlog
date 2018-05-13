@@ -43,3 +43,8 @@ impl LogfileID {
 	}
 
 }
+
+pub struct LogfileFSID {
+	pub fsid: String
+}
+

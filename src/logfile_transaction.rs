@@ -20,23 +20,22 @@
  */
 use std::path::Path;
 use std::fs;
-use std::io::Write;
+use std::io::{Read,Write};
 use serde_json as json;
 use ::logfile_id::LogfileID;
 use ::logfile_partition::LogfilePartition;
 
 #[derive(Serialize, Deserialize)]
 pub struct LogfileTransaction {
-	id: String,
-	partitions: Vec<LogfileTransactionPartition>,
+	pub id: String,
+	pub partitions: Vec<LogfileTransactionPartition>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct LogfileTransactionPartition {
-	file_name: String,
-	file_offset: u64,
-	time_head: u64,
-	time_tail: u64
+	pub time_head: u64,
+	pub time_tail: u64,
+	pub offset: u64,
 }
 
 impl LogfileTransaction {
@@ -46,10 +45,9 @@ impl LogfileTransaction {
 			partitions: &Vec<LogfilePartition>) -> LogfileTransaction {
 		let partitions = partitions.iter().map(|partition| {
 			return LogfileTransactionPartition {
-				file_name: partition.get_file_name(),
-				file_offset: partition.get_file_offset(),
 				time_head: partition.get_time_head(),
 				time_tail: partition.get_time_tail(),
+				offset: partition.get_file_offset(),
 			}
 		});
 
@@ -59,10 +57,23 @@ impl LogfileTransaction {
 		};
 	}
 
+	pub fn read_file(path: &Path) -> Result<LogfileTransaction, ::Error> {
+		let mut file = fs::File::open(path)?;
+		let mut data = String::new();
+		file.read_to_string(&mut data)?;
+
+		let transaction = match json::from_str(&data) {
+			Ok(v) => v,
+			Err(e) => return Err(err_server!("error while decoding transaction file: {}", e))
+		};
+
+		return Ok(transaction);
+	}
+
 	pub fn write_file(&self, path: &Path) -> Result<(), ::Error> {
 		let encoded = match json::to_vec(&self) {
 			Ok(v) => v,
-			Err(e) => return Err(err_server!("error while encoding JSON: {}", e))
+			Err(e) => return Err(err_server!("error while encoding transaction file: {}", e))
 		};
 
 		let path_swap = format!("{}.swap", match path.to_str() {
