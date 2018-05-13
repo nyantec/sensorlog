@@ -150,11 +150,11 @@ impl LogfileStorage {
 		let new_partition = match self.partitions.last() {
 			Some(partition) =>
 				if partition.get_file_offset() + new_bytes > self.partition_size_bytes {
-					Some(LogfilePartition::create(partition.get_time_head())?)
+					Some(LogfilePartition::create(&self.path, partition.get_time_head())?)
 				} else {
 					None
 				},
-			None => Some(LogfilePartition::create(0)?)
+			None => Some(LogfilePartition::create(&self.path, 0)?)
 		};
 
 		if let Some(partition) = new_partition {

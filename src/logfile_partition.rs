@@ -18,23 +18,26 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
+use std::path::{Path,PathBuf};
 use ::measure::Measurement;
 
 pub struct LogfilePartition {
+	path: PathBuf,
 	time_head: u64,
 	time_tail: u64,
-	file_offset: u64,
+	offset: u64,
 }
 
 impl LogfilePartition {
 
-	pub fn create(time: u64) -> Result<LogfilePartition, ::Error> {
+	pub fn create(path: &Path, time: u64) -> Result<LogfilePartition, ::Error> {
 		info!("Creating new logfile partition");
 
 		let part = LogfilePartition {
+			path: path.to_owned(),
 			time_head: time,
 			time_tail: time,
-			file_offset: 0,
+			offset: 0,
 		};
 
 		return Ok(part);
@@ -53,11 +56,11 @@ impl LogfilePartition {
 		debug!(
 				"Storing new measurement; time={}, foffset={}",
 				measurement.time,
-				self.file_offset);
+				self.offset);
 
 		let measurement_size = measurement.get_encoded_size();
 		self.time_head = measurement.time;
-		self.file_offset += measurement_size;
+		self.offset += measurement_size;
 		return Ok(());
 	}
 
@@ -71,7 +74,7 @@ impl LogfilePartition {
 	}
 
 	pub fn get_file_offset(&self) -> u64 {
-		return self.file_offset;
+		return self.offset;
 	}
 
 	pub fn get_time_head(&self) -> u64 {
