@@ -77,6 +77,10 @@ impl Logfile {
 			config: &LogfileConfig) -> Result<Option<Logfile>, ::Error> {
 		let transaction_path = path.join(TRANSACTION_FILE_NAME).to_owned();
 		let transaction = LogfileTransaction::read_file(&transaction_path)?;
+		if !transaction_path.exists() {
+			return Ok(None);
+		}
+
 		debug!("Loading logfile; id={:?}", transaction.id);
 
 		let logfile_id = LogfileID::from_string(transaction.id);
