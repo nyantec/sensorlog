@@ -21,7 +21,9 @@
 extern crate getopts;
 #[macro_use] extern crate log;
 extern crate env_logger;
-extern crate iron;
+extern crate hyper;
+extern crate futures;
+extern crate futures_cpupool;
 extern crate serde;
 extern crate serde_json;
 #[macro_use] extern crate serde_derive;
@@ -31,11 +33,13 @@ mod api;
 mod api_json;
 mod http;
 mod logfile_map;
+mod logfile_service;
 
 use std::env;
 use std::io;
 use std::io::Write;
 use std::path::Path;
+use std::sync::Arc;
 use ::error::{Error,ErrorCode};
 
 const VERSION : &'static str = env!("CARGO_PKG_VERSION");
@@ -149,13 +153,22 @@ fn main() {
 		}
 	};
 
-	// start http server
-	http::http_server_start(http::ServerOptions {
-		listen_addr: match flags.opt_str("listen_http") {
-			Some(addr) => addr,
-			None => "[::]:8080".to_owned()
-		},
-	});
+	// start logfile service
+	let logfile_service = Arc::new(logfile_service::LogfileService::new(logfile_map));
 
+	// start http server
+	let http_server_status = http::start_server(
+			logfile_service,
+			http::ServerOptions {
+				listen_addr: match flags.opt_str("listen_http") {
+					Some(addr) => addr,
+					None => "[::]:8080".to_owned()
+				},
+			});
+
+	if let Err(e) = http_server_status {
+		writeln!(&mut std::io::stderr(), "ERROR: {}", e).unwrap();
+		std::process::exit(1);
+	}
 }
 

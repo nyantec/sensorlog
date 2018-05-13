@@ -18,103 +18,166 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-extern crate iron;
 use std::io::prelude::*;
 use std::fs::File;
 use std::fs;
 use std::path::{Path,PathBuf};
-use self::iron::prelude::*;
-use self::iron::Handler;
-use self::iron::method::Method;
+use std::net::SocketAddr;
 use std::sync::{Arc,Mutex};
-
-use self::iron::headers::ContentType;
-use self::iron::mime::{Mime, TopLevel, SubLevel, Attr, Value};
+use futures;
+use futures::future::Future;
+use futures::Stream;
+use futures_cpupool::CpuPool;
+use hyper::{StatusCode, Method, Uri};
+use hyper::header::ContentLength;
+use hyper::server::{Http, Request, Response, Service};
+use ::logfile_service::LogfileService;
 
 pub struct ServerOptions {
 	pub listen_addr: String,
 }
 
-pub fn http_server_start(opts: ServerOptions) -> bool {
-	let dispatch = DispatchHandler{
-		api_handler: APIHandler {},
+pub fn start_server(
+		logfile_service: Arc<::logfile_service::LogfileService>,
+		opts: ServerOptions) -> Result<(), ::Error> {
+	let listen_addr = match opts.listen_addr.parse::<SocketAddr>() {
+		Ok(addr) => addr,
+		Err(e) => return Err(err_user!("invalid listen address: {}", e))
 	};
 
 	info!("Listening for HTTP connections on {}", &opts.listen_addr);
-	Iron::new(dispatch).http(&*opts.listen_addr).unwrap();
-	return true;
+	let server_factory = Http::new().bind(
+			&listen_addr,
+			move || Ok(HTTPHandler::new(logfile_service.clone())));
+
+	let server = match server_factory {
+		Ok(server) => server,
+		Err(e) => return Err(err_user!("HTTP server rror: {}", e))
+	};
+
+	if let Err(e) = server.run() {
+		return Err(err_server!("HTTP server error: {}", e));
+	}
+
+	return Ok(());
 }
 
-struct DispatchHandler	{
-	api_handler: APIHandler,
+fn serve(
+		service: &LogfileService,
+		method: Method,
+		uri: Uri,
+		body: &Vec<u8>) -> Result<Response, ::Error> {
+	// route /api/v1/*
+	if uri.path().starts_with("/api/v1/") {
+		return serve_api(service, method, uri, body);
+	}
+
+	// route /ping
+	if uri.path() == "/ping" {
+		return Ok(
+				Response::new()
+						.with_status(StatusCode::Ok)
+						.with_body("pong"));
+	}
+
+	// return 404 for invalid routes
+	return Ok(
+			Response::new()
+					.with_status(StatusCode::NotFound)
+					.with_body("not found"));
 }
 
-impl Handler for DispatchHandler {
+fn serve_api(
+		service: &LogfileService,
+		method: Method,
+		uri: Uri,
+		body: &Vec<u8>) -> Result<Response, ::Error> {
+	if method != Method::Post ||
+	   !uri.path().starts_with("/api/v1/") {
+		return Err(err_user!("invalid request"))
+	}
 
-	fn handle(&self, req: &mut Request) -> IronResult<Response> {
-		// forward /api/v1 to APIHandler
-		if req.url.path().len() >= 2 &&
-			 req.url.path()[0] == "api" &&
-			 req.url.path()[1] == "v1" {
-			return self.api_handler.handle(req);
-		}
+	let rpc_body = String::from_utf8_lossy(&body);
+	let rpc_method = uri
+			.path()
+			.split("/")
+			.collect::<Vec<&str>>()[3]
+			.to_string();
 
-		// return 200 for /ping
-		if req.url.path().len() == 1 && req.url.path()[0] == "ping" {
-			let res = Response::with(iron::status::Ok);
-			return Ok(res);
-		}
+	let rpc_response = ::api_json::call_str(&service, &rpc_method, &rpc_body)?;
 
-		// return 404 for invalid routes
-		return Ok(Response::with(iron::status::NotFound))
+	return Ok(
+			Response::new()
+					.with_status(StatusCode::Ok)
+					.with_body(rpc_response));
+}
+
+
+pub struct HTTPHandler {
+	service: Arc<LogfileService>,
+	thread_pool: CpuPool,
+}
+
+impl HTTPHandler {
+
+	pub fn new(service: Arc<LogfileService>) -> HTTPHandler {
+		return HTTPHandler {
+			thread_pool: CpuPool::new_num_cpus(),
+			service: service
+		};
 	}
 
 }
 
-struct APIHandler {}
+impl Service for HTTPHandler {
 
-impl APIHandler {
+	type Request = Request;
+	type Response = Response;
+	type Error = ::hyper::Error;
+	type Future = Box<Future<Item=Self::Response, Error=Self::Error>>;
 
-	fn handle(&self, req: &mut Request) -> IronResult<Response> {
-		let invalid_request = Response::with((
-				iron::status::BadRequest,
-				"{ \"error\": \"invalid API request\" }"));
+	fn call(&self, req: Request) -> Self::Future {
+		let service = self.service.clone();
 
-		if req.method != Method::Post ||
-			 req.url.path().len() < 3 ||
-			 req.url.path()[0] != "api" ||
-			 req.url.path()[1] != "v1" {
-			return Ok(invalid_request);
-		}
+		let res_future = self.thread_pool.spawn_fn(move || {
+		  let (method, uri, _version, _headers, body) = req.deconstruct();
 
-		let method = req.url.path()[2].to_string();
-		let mut body = Vec::<u8>::new();
-		let body_str = match req.body.read_to_end(&mut body) {
-			Ok(_) => String::from_utf8_lossy(&body),
-			Err(_) => return Ok(invalid_request)
-		};
+			let body_chunks = match body.collect().wait() {
+				Ok(v) => v,
+				Err(e) =>
+					return futures::future::ok(
+							Response::new()
+									.with_status(StatusCode::InternalServerError)
+									.with_body("error while reading request body"))
+			};
 
-		let mut res = match ::api_json::call_str(&method, &body_str) {
-			Ok(res) =>
-				Response::with((iron::status::Ok, res)),
-			Err(err) => match err.code {
-				::ErrorCode::BadRequest =>
-						Response::with((iron::status::BadRequest, err.message)),
-				::ErrorCode::NotFound =>
-						Response::with((iron::status::NotFound, err.message)),
-				::ErrorCode::InternalServerError =>
-						Response::with((iron::status::InternalServerError, err.message)),
-			}
-		};
+			let body = body_chunks.iter().fold(vec![], |mut acc, chunk| {
+				acc.extend_from_slice(chunk.as_ref());
+				acc
+			});
 
-		res.headers.set(
-				ContentType(
-						Mime(
-								TopLevel::Application,
-								SubLevel::Json,
-								vec![(Attr::Charset, Value::Utf8)])));
+			let res : Response = match serve(&service, method, uri, &body) {
+				Ok(res) => res,
+				Err(err) => match err.code {
+					::ErrorCode::BadRequest =>
+							Response::new()
+									.with_status(StatusCode::BadRequest)
+									.with_body(err.message),
+					::ErrorCode::NotFound =>
+							Response::new()
+									.with_status(StatusCode::NotFound)
+									.with_body(err.message),
+					::ErrorCode::InternalServerError =>
+							Response::new()
+									.with_status(StatusCode::InternalServerError)
+									.with_body(err.message),
+				}
+			};
 
-		return Ok(res);
+			return futures::future::ok(res);
+		});
+
+		return res_future.boxed();
 	}
 
 }
