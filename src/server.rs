@@ -186,7 +186,7 @@ fn run() -> Result<(), ::Error> {
 			logfile_directory::LogfileDirectory::new(&Path::new(&datadir)),
 			logfile_config);
 
-	let mut logfile_map = match logfile_map {
+	let logfile_map = match logfile_map {
 		Ok(v) => v,
 		Err(e) => return Err(err_server!("error while opening database: {}", e))
 	};

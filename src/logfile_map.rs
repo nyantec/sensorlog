@@ -20,14 +20,11 @@
  */
 use std::collections::HashMap;
 use std::sync::{Arc,RwLock};
-use std::path::{Path,PathBuf};
 use std::process;
-use std::fs;
 use ::logfile::Logfile;
 use ::logfile_id::LogfileID;
 use ::logfile_directory::LogfileDirectory;
 use ::logfile_config::LogfileConfig;
-use ::quota::StorageQuota;
 
 pub struct LogfileMap {
 	directory: LogfileDirectory,
@@ -98,5 +95,4 @@ impl LogfileMap {
 	}
 
 }
-
 

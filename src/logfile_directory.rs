@@ -20,7 +20,7 @@
  */
 use std::path::{Path,PathBuf};
 use std::fs;
-use std::sync::{Arc,RwLock};
+use std::sync::Arc;
 use ::logfile::Logfile;
 use ::logfile_id::{LogfileID, LogfilePath};
 use ::logfile_config::LogfileConfig;
@@ -45,7 +45,7 @@ impl LogfileDirectory {
 				.join("db")
 				.join(logfile_id.get_path().get_file_name());
 
-		let mut logfile = Logfile::create(
+		let logfile = Logfile::create(
 				logfile_id.clone(),
 				&logfile_path,
 				logfile_config)?;
@@ -61,7 +61,7 @@ impl LogfileDirectory {
 				.join("db")
 				.join(&logfile_path.get_file_name());
 
-		let mut logfile = Logfile::open(
+		let logfile = Logfile::open(
 				&logfile_path,
 				logfile_config)?;
 
@@ -82,5 +82,4 @@ impl LogfileDirectory {
 	}
 
 }
-
 

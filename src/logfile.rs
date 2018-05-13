@@ -18,9 +18,9 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use std::sync::{Arc,Mutex,RwLock};
+use std::sync::{Arc, RwLock};
 use std::process;
-use std::path::{Path,PathBuf};
+use std::path::{Path, PathBuf};
 use std::fs;
 use ::logfile_id::LogfileID;
 use ::logfile_config::LogfileConfig;

@@ -18,12 +18,6 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use std::collections::HashMap;
-use std::sync::{Arc,RwLock};
-use std::path::{Path,PathBuf};
-use std::process;
-use std::fs;
-use ::logfile::Logfile;
 use ::logfile_id::LogfileID;
 use ::quota::StorageQuota;
 
@@ -67,5 +61,4 @@ impl LogfileConfig {
 	}
 
 }
-
 

@@ -33,7 +33,7 @@ impl StorageQuota {
 			"none" | "zero" => Ok(StorageQuota::Zero),
 			s => match s.parse::<u64>() {
 				Ok(v) => Ok(StorageQuota::Limited{limit_bytes: v}),
-				Err(e) => Err(err_user!("invalid storage quota specification"))
+				Err(_) => Err(err_user!("invalid storage quota specification"))
 			}
 		};
 	}
