@@ -62,6 +62,8 @@ fn serve(
 		method: Method,
 		uri: Uri,
 		body: &Vec<u8>) -> Result<Response, ::Error> {
+	debug!("HTTP request; method={}, uri={}", method, uri);
+
 	// route /api/v1/*
 	if uri.path().starts_with("/api/v1/") {
 		return serve_api(service, method, uri, body);
@@ -139,11 +141,14 @@ impl Service for HTTPHandler {
 
 			let body_chunks = match body.collect().wait() {
 				Ok(v) => v,
-				Err(_) =>
+				Err(e) => {
+					error!("HTTP Error while reading request body: {}", e);
+
 					return futures::future::ok(
 							Response::new()
 									.with_status(StatusCode::InternalServerError)
 									.with_body("error while reading request body"))
+				}
 			};
 
 			let body = body_chunks.iter().fold(vec![], |mut acc, chunk| {
@@ -153,19 +158,23 @@ impl Service for HTTPHandler {
 
 			let res : Response = match serve(&service, method, uri, &body) {
 				Ok(res) => res,
-				Err(err) => match err.code {
-					::ErrorCode::BadRequest =>
-							Response::new()
-									.with_status(StatusCode::BadRequest)
-									.with_body(err.message),
-					::ErrorCode::NotFound =>
-							Response::new()
-									.with_status(StatusCode::NotFound)
-									.with_body(err.message),
-					::ErrorCode::InternalServerError =>
-							Response::new()
-									.with_status(StatusCode::InternalServerError)
-									.with_body(err.message),
+				Err(err) => {
+					error!("HTTP Error: {}", err);
+
+					match err.code {
+						::ErrorCode::BadRequest =>
+								Response::new()
+										.with_status(StatusCode::BadRequest)
+										.with_body(err.message),
+						::ErrorCode::NotFound =>
+								Response::new()
+										.with_status(StatusCode::NotFound)
+										.with_body(err.message),
+						::ErrorCode::InternalServerError =>
+								Response::new()
+										.with_status(StatusCode::InternalServerError)
+										.with_body(err.message),
+					}
 				}
 			};
 

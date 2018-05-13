@@ -39,6 +39,8 @@ impl LogfileMap {
 	}
 
 	pub fn open(path: &Path) -> Result<LogfileMap, ::Error> {
+		info!("Opening logfile database at {:?}", path);
+
 		let logfile_map = LogfileMap::new(path);
 		return Ok(logfile_map);
 	}
