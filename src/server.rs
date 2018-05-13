@@ -27,12 +27,14 @@ extern crate futures_cpupool;
 extern crate serde;
 extern crate serde_json;
 #[macro_use] extern crate serde_derive;
+extern crate md5;
 
 #[macro_use] mod error;
 mod api;
 mod api_json;
 mod http;
 mod logfile;
+mod logfile_id;
 mod logfile_map;
 mod logfile_partition;
 mod logfile_service;

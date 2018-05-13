@@ -23,6 +23,7 @@ use std::sync::{Arc,RwLock};
 use std::path::{Path,PathBuf};
 use std::process;
 use ::logfile::Logfile;
+use ::logfile_id::LogfileID;
 use ::quota::StorageQuota;
 
 pub struct LogfileMap {
@@ -64,10 +65,10 @@ impl LogfileMap {
 
 	pub fn lookup_or_create(
 			self: &LogfileMap,
-			logfile_id: &str) -> Result<Arc<Logfile>, ::Error> {
+			logfile_id: &LogfileID) -> Result<Arc<Logfile>, ::Error> {
 		// rust RWLocks don't support upgrades. so we implement an optimistic
 		// fast path using a read lock
-		if let Some(logfile) = self.lookup(logfile_id) {
+		if let Some(logfile) = self.lookup(&logfile_id.get_string()) {
 			return Ok(logfile);
 		}
 
@@ -81,20 +82,20 @@ impl LogfileMap {
 		};
 
 		// check if the logfile exists again (pessimistic case)
-		if let Some(logfile) = logfiles_locked.get(logfile_id) {
+		if let Some(logfile) = logfiles_locked.get(&logfile_id.get_string()) {
 			return Ok(logfile.clone());
 		}
 
 		// if the logfile doesn't exist yet, create a new one
 		let logfile = self.create_logfile(logfile_id)?;
-		logfiles_locked.insert(logfile_id.to_string(), logfile.clone());
+		logfiles_locked.insert(logfile_id.get_string(), logfile.clone());
 		return Ok(logfile);
 	}
 
-	pub fn create_logfile(&self, logfile_id: &str) -> Result<Arc<Logfile>, ::Error> {
+	pub fn create_logfile(&self, logfile_id: &LogfileID) -> Result<Arc<Logfile>, ::Error> {
 		let logfile_path = self.path
 				.join("db")
-				.join(logfile_id);
+				.join(logfile_id.get_file_name());
 
 		let mut logfile = Logfile::create(
 				&logfile_path,
@@ -109,7 +110,7 @@ impl LogfileMap {
 
 	pub fn set_storage_quota(
 			&mut self,
-			logfile_id: &str,
+			logfile_id: &LogfileID,
 			quota: StorageQuota) -> Result<(), ::Error> {
 		let logfile = self.lookup_or_create(logfile_id)?;
 		logfile.set_storage_quota(quota);

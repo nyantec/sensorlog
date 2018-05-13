@@ -1,7 +1,7 @@
 /**
  * Copyright © 2018 nyantec GmbH <oss@nyantec.com>
  * Authors:
- *   Paul Asmuth <asm@nyantec.com>
+ *	 Paul Asmuth <asm@nyantec.com>
  *
  * Provided that these terms and disclaimer and all copyright notices
  * are retained or reproduced in an accompanying document, permission
@@ -18,38 +18,27 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use ::logfile_service::LogfileService;
-use ::logfile_id::LogfileID;
-use ::measure::Measurement;
+use md5;
 
-#[derive(Serialize, Deserialize)]
-pub struct StoreMeasurementRequest {
-	time: Option<u64>,
-	sensor_id: String,
-	data: String,
+pub struct LogfileID {
+	id: String
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct StoreMeasurementResponse {
-	success: bool
+impl LogfileID {
+
+	pub fn from_string(string: String) -> LogfileID {
+		return LogfileID {
+			id: string
+		};
+	}
+
+	pub fn get_string(&self) -> String {
+		return self.id.to_owned();
+	}
+
+	pub fn get_file_name(&self) -> String {
+		let id_digest = md5::compute(self.id.as_bytes());
+		return format!("{:x}", id_digest);
+	}
+
 }
-
-pub fn store_measurement(
-		logfile_service: &LogfileService,
-		req: StoreMeasurementRequest) -> Result<StoreMeasurementResponse, ::Error> {
-	debug!("Storing measurement: sensor_id={}", req.sensor_id);
-
-	let measurement = Measurement {
-		time: req.time.unwrap_or(::time::get_unix_microseconds()?),
-		data: req.data.as_bytes().to_vec(),
-	};
-
-	let logfile_id = LogfileID::from_string(req.sensor_id.to_owned());
-	let logfile = logfile_service.logfile_map.lookup_or_create(&logfile_id)?;
-	logfile.append_measurement(&measurement)?;
-
-	return Ok(StoreMeasurementResponse {
-		success: true
-	});
-}
-
