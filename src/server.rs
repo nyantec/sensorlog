@@ -36,6 +36,7 @@ mod logfile;
 mod logfile_map;
 mod logfile_partition;
 mod logfile_service;
+mod logfile_transaction;
 mod quota;
 mod measure;
 mod time;

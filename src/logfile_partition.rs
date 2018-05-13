@@ -23,7 +23,6 @@ use ::measure::Measurement;
 pub struct LogfilePartition {
 	time_head: u64,
 	time_tail: u64,
-	storage_used_bytes: u64,
 	file_offset: u64,
 }
 
@@ -35,7 +34,6 @@ impl LogfilePartition {
 		let part = LogfilePartition {
 			time_head: time,
 			time_tail: time,
-			storage_used_bytes: 0,
 			file_offset: 0,
 		};
 
@@ -59,7 +57,6 @@ impl LogfilePartition {
 
 		let measurement_size = measurement.get_encoded_size();
 		self.time_head = measurement.time;
-		self.storage_used_bytes += measurement_size;
 		self.file_offset += measurement_size;
 		return Ok(());
 	}
@@ -69,16 +66,20 @@ impl LogfilePartition {
 		return Ok(());
 	}
 
+	pub fn get_file_name(&self) -> String {
+		return format!("{}.log", self.time_head);
+	}
+
+	pub fn get_file_offset(&self) -> u64 {
+		return self.file_offset;
+	}
+
 	pub fn get_time_head(&self) -> u64 {
 		return self.time_head;
 	}
 
 	pub fn get_time_tail(&self) -> u64 {
 		return self.time_tail;
-	}
-
-	pub fn get_storage_used_bytes(&self) -> u64 {
-		return self.storage_used_bytes;
 	}
 
 }

@@ -92,7 +92,13 @@ impl LogfileMap {
 	}
 
 	pub fn create_logfile(&self, logfile_id: &str) -> Result<Arc<Logfile>, ::Error> {
-		let mut logfile = Logfile::create(self.quota_default.clone())?;
+		let logfile_path = self.path
+				.join("db")
+				.join(logfile_id);
+
+		let mut logfile = Logfile::create(
+				&logfile_path,
+				self.quota_default.clone())?;
 
 		if let Some(partition_size) = self.partition_size_bytes_default {
 			logfile.set_partition_size_bytes(partition_size);

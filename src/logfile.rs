@@ -20,17 +20,22 @@
  */
 use std::sync::{Arc,Mutex,RwLock};
 use std::process;
+use std::path::{Path,PathBuf};
+use std::fs;
 use ::logfile_partition::LogfilePartition;
+use ::logfile_transaction::LogfileTransaction;
 use ::quota::StorageQuota;
 use ::measure::Measurement;
 
 const DEFAULT_PARTITION_SIZE_MAX_BYTES : u64 = 1024 * 128;
+const TRANSACTION_FILE_NAME : &'static str = "tx.lock";
 
 pub struct Logfile {
 	storage: Arc<RwLock<LogfileStorage>>,
 }
 
 pub struct LogfileStorage {
+	path: PathBuf,
 	storage_quota: StorageQuota,
 	partitions: Vec<LogfilePartition>,
 	partitions_deleted: Vec<LogfilePartition>,
@@ -39,14 +44,19 @@ pub struct LogfileStorage {
 
 impl Logfile {
 
-	pub fn create(storage_quota: StorageQuota) -> Result<Logfile, ::Error> {
+	pub fn create(
+			path: &Path,
+			storage_quota: StorageQuota) -> Result<Logfile, ::Error> {
 		if storage_quota.is_zero() {
 			return Err(err_quota!("insufficient quota"));
 		}
 
 		debug!("Creating new logfile");
+		fs::create_dir_all(path)?;
+
 		let logfile = Logfile {
 			storage: Arc::new(RwLock::new(LogfileStorage {
+				path: path.to_owned(),
 				storage_quota: storage_quota,
 				partitions: Vec::<LogfilePartition>::new(),
 				partitions_deleted: Vec::<LogfilePartition>::new(),
@@ -118,6 +128,9 @@ impl LogfileStorage {
 
 	pub fn commit(&mut self) -> Result<(), ::Error> {
 		// write transaction to disk
+		let transaction = LogfileTransaction::from_partition_map(&self.partitions);
+		let transaction_path = self.path.join(TRANSACTION_FILE_NAME);
+		transaction.write_file(&transaction_path)?;
 
 		// drop deleted partitions
 		for partition in &mut self.partitions_deleted {
@@ -136,7 +149,7 @@ impl LogfileStorage {
 		// append a new head partition if the current head partition is full
 		let new_partition = match self.partitions.last() {
 			Some(partition) =>
-				if partition.get_storage_used_bytes() + new_bytes > self.partition_size_bytes {
+				if partition.get_file_offset() + new_bytes > self.partition_size_bytes {
 					Some(LogfilePartition::create(partition.get_time_head())?)
 				} else {
 					None
@@ -156,7 +169,7 @@ impl LogfileStorage {
 				new_bytes + self
 						.partitions
 						.iter()
-						.fold(0, |s, x| s + x.get_storage_used_bytes());
+						.fold(0, |s, x| s + x.get_file_offset());
 
 		while !self.storage_quota.is_sufficient_bytes(required_bytes) {
 			if self.partitions.len() == 0 {
@@ -164,7 +177,7 @@ impl LogfileStorage {
 			}
 
 			let deleted_partition = self.partitions.remove(0);
-			required_bytes -= deleted_partition.get_storage_used_bytes();
+			required_bytes -= deleted_partition.get_file_offset();
 			self.partitions_deleted.push(deleted_partition);
 		}
 
