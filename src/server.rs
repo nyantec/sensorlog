@@ -39,10 +39,11 @@ mod logfile_config;
 mod logfile_directory;
 mod logfile_map;
 mod logfile_partition;
-mod service;
 mod logfile_transaction;
+mod logfile_writer;
 mod quota;
 mod measure;
+mod service;
 mod time;
 
 use std::env;

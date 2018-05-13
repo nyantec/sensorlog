@@ -18,36 +18,30 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use std::mem::transmute;
+use std::path::Path;
+use std::fs;
+use std::io::{Read,Write,Seek,SeekFrom};
+use ::logfile_id::LogfileID;
+use ::logfile_partition::LogfilePartition;
+use ::measure::Measurement;
 
-#[derive(Debug, Clone)]
-pub struct Measurement {
-	pub time: u64,
-	pub data: Vec<u8>
-}
+pub fn append(
+		path: &Path,
+		offset: u64,
+		measurement: &Measurement) -> Result<u64, ::Error> {
+	let encoded = measurement.encode();
+	assert!(encoded.len() as u64 == measurement.get_encoded_size());
 
-impl Measurement {
+	let mut file_opts = fs::OpenOptions::new();
+	file_opts.write(true);
+	file_opts.create(true);
 
-	pub fn encode(&self) -> Vec<u8> {
-		let time_encoded : [u8; 8] = unsafe {
-			transmute(self.time.to_le())
-		};
+	// N.B. there doesnt appear to be a binding to pwrite in the rust standard lib
+	let mut file = file_opts.open(&path)?;
+	file.seek(SeekFrom::Start(offset))?;
+	file.write_all(&encoded)?;
+	file.sync_data()?;
 
-		let data_size_encoded : [u8; 4] = unsafe {
-			transmute((self.data.len() as u32).to_le())
-		};
-
-		let mut encoded = self.data.clone();
-		encoded.extend_from_slice(&data_size_encoded);
-		encoded.extend_from_slice(&time_encoded);
-
-		return encoded;
-	}
-
-	pub fn get_encoded_size(&self) -> u64 {
-		return (self.data.len() + 12) as u64;
-	}
-
-
+	return Ok(measurement.get_encoded_size());
 }
 

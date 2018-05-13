@@ -71,9 +71,12 @@ impl LogfilePartition {
 				measurement.time,
 				self.offset);
 
-		let measurement_size = measurement.get_encoded_size();
+		self.offset += ::logfile_writer::append(
+				&self.path.join(self.get_file_name()),
+				self.offset,
+				measurement)?;
+
 		self.time_head = measurement.time;
-		self.offset += measurement_size;
 		return Ok(());
 	}
 
@@ -83,7 +86,7 @@ impl LogfilePartition {
 	}
 
 	pub fn get_file_name(&self) -> String {
-		return format!("{}.log", self.time_head);
+		return format!("{}.log", self.time_tail);
 	}
 
 	pub fn get_file_offset(&self) -> u64 {
