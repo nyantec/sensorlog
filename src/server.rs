@@ -36,6 +36,7 @@ mod logfile;
 mod logfile_map;
 mod logfile_partition;
 mod logfile_service;
+mod quota;
 
 use std::env;
 use std::io::Write;
@@ -98,12 +99,20 @@ Examples:
 ";
 
 fn main() {
+	if let Err(err) = run() {
+		writeln!(&mut std::io::stderr(), "ERROR: {}", err).unwrap();
+		std::process::exit(1);
+	}
+}
+
+fn run() -> Result<(), ::Error> {
 	// parse command line flags
 	let args : Vec<String> = env::args().collect();
 
 	let mut flag_cfg = getopts::Options::new();
 	flag_cfg.optopt("", "listen_http", "", "PORT");
 	flag_cfg.optopt("", "datadir", "", "PATH");
+	flag_cfg.optopt("", "quota_default", "", "QUOTA");
 	flag_cfg.optopt("", "loglevel", "", "LEVEL");
 	flag_cfg.optflag("h", "help", "");
 	flag_cfg.optflag("v", "version", "");
@@ -122,7 +131,7 @@ fn main() {
 
 	if flags.opt_present("h") {
 		std::io::stdout().write(USAGE.as_bytes()).unwrap();
-		return;
+		return Ok(());
 	}
 
 	// start logger
@@ -135,41 +144,39 @@ fn main() {
 
 	env_logger::init();
 
-	// open logfile map
+	// open database
 	info!("sensorlog v{}", VERSION);
 
 	let datadir = match flags.opt_str("datadir") {
 		Some(v) => v,
-		None => {
-			writeln!(&mut std::io::stderr(), "missing option: --datadir").unwrap();
-			std::process::exit(1);
-		}
+		None => return Err(err_user!("missing option: --datadir"))
 	};
 
-	let logfile_map = match logfile_map::LogfileMap::open(&Path::new(&datadir)) {
+	let mut logfile_map = match logfile_map::LogfileMap::open(&Path::new(&datadir)) {
 		Ok(v) => v,
-		Err(e) => {
-			writeln!(&mut std::io::stderr(), "error while opening database: {}", e).unwrap();
-			std::process::exit(1);
-		}
+		Err(e) => return Err(err_server!("error while opening database: {}", e))
 	};
+
+	logfile_map.set_default_storage_quota(
+			quota::StorageQuota::parse_string(
+					&match &flags.opt_str("quota_default") {
+						&Some(ref v) => v,
+						&None => return Err(err_user!("missing option: --quota_default"))
+					})?);
 
 	// start logfile service
 	let logfile_service = Arc::new(logfile_service::LogfileService::new(logfile_map));
 
 	// start http server
-	let http_server_status = http::start_server(
+	http::start_server(
 			logfile_service,
 			http::ServerOptions {
 				listen_addr: match flags.opt_str("listen_http") {
 					Some(addr) => addr,
 					None => "[::]:8080".to_owned()
 				},
-			});
+			})?;
 
-	if let Err(e) = http_server_status {
-		writeln!(&mut std::io::stderr(), "ERROR: {}", e).unwrap();
-		std::process::exit(1);
-	}
+	return Ok(());
 }
 

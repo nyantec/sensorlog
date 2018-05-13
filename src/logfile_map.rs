@@ -22,7 +22,8 @@ use std::collections::HashMap;
 use std::sync::{Arc,RwLock};
 use std::path::{Path,PathBuf};
 use std::process;
-use ::logfile::{Logfile, StorageQuota};
+use ::logfile::Logfile;
+use ::quota::StorageQuota;
 
 pub struct LogfileMap {
 	path: PathBuf,
@@ -36,7 +37,7 @@ impl LogfileMap {
 		return LogfileMap {
 			path: path.to_owned(),
 			logfiles: Arc::new(RwLock::new(HashMap::<String, Arc<Logfile>>::new())),
-			quota_default: StorageQuota { bytes_max: 0 },
+			quota_default: StorageQuota::Zero,
 		};
 	}
 

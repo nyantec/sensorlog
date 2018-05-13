@@ -18,39 +18,29 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use std::sync::{Arc,Mutex};
-use ::logfile_partition::LogfilePartition;
-use ::quota::StorageQuota;
-
-pub struct Logfile {
-	storage_quota: Mutex<StorageQuota>
+#[derive(Debug, Clone)]
+pub enum StorageQuota {
+	Unlimited,
+	Limited{limit_bytes: u64},
+	Zero
 }
 
-impl Logfile {
+impl StorageQuota {
 
-	pub fn create(storage_quota: StorageQuota) -> Result<Logfile, ::Error> {
-		if storage_quota.is_zero() {
-			return Err(err_quota!("insufficient quota"));
-		}
-
-		debug!("Creating new logfile");
-		let logfile = Logfile {
-			storage_quota: Mutex::new(storage_quota)
+	pub fn parse_string(string: &str) -> Result<StorageQuota, ::Error> {
+		return match string {
+			"unlimited" | "infinite" => Ok(StorageQuota::Unlimited),
+			"none" | "zero" => Ok(StorageQuota::Zero),
+			_ => Err(err_user!("invalid storage quota specification"))
 		};
-
-		return Ok(logfile);
 	}
 
-	pub fn append_measurement(
-			&self,
-			time: &Option<u64>,
-			data: &[u8]) -> Result<(), ::Error> {
-		return Err(err_server!("nyi"));
-	}
-
-	pub fn set_storage_quota(&self, quota: StorageQuota) {
-		*self.storage_quota.lock().unwrap() = quota;
+	pub fn is_zero(&self) -> bool {
+		return match self {
+			&StorageQuota::Unlimited => false,
+			&StorageQuota::Limited{limit_bytes} => limit_bytes == 0,
+			&StorageQuota::Zero => true,
+		};
 	}
 
 }
-
