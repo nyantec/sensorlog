@@ -1,3 +1,8 @@
 - [ ] read operations
 - [ ] store checksums?
 - [ ] clock watchdog
+- [ ] daemonize/pidfile flags
+- [ ] parse human storage quota definitions
+- [ ] tests
+- [ ] documentation/comments
+- [ ] improved API documentation
