@@ -26,11 +26,11 @@ use ::measure::Measurement;
 
 pub struct Logfile {
 	storage_quota: Mutex<StorageQuota>,
-	partition_map: Arc<RwLock<LogfilePartitionMap>>,
+	state: Arc<RwLock<LogfileState>>,
 	partition_size_max_bytes: u64,
 }
 
-pub struct LogfilePartitionMap {
+pub struct LogfileState {
 	partitions: Vec<LogfilePartition>,
 }
 
@@ -46,7 +46,7 @@ impl Logfile {
 		debug!("Creating new logfile");
 		let logfile = Logfile {
 			storage_quota: Mutex::new(storage_quota),
-			partition_map: Arc::new(RwLock::new(LogfilePartitionMap {
+			state: Arc::new(RwLock::new(LogfileState {
 				partitions: Vec::<LogfilePartition>::new(),
 			})),
 			partition_size_max_bytes: partition_size_max_bytes
@@ -63,8 +63,8 @@ impl Logfile {
 			return Err(err_quota!("insufficient quota"));
 		}
 
-		// lock the partition map
-		let mut pmap_locked = match self.partition_map.write() {
+		// lock the state
+		let mut state_locked = match self.state.write() {
 			Ok(l) => l,
 			Err(_) => {
 				error!("lock is poisoned; aborting...");
@@ -72,26 +72,39 @@ impl Logfile {
 			}
 		};
 
+		// check that the measurement time is monotonically increasing
+		let head_partition_time = match state_locked.partitions.last() {
+			Some(p) => p.get_time_head(),
+			None => 0,
+		};
+
+		if measurement.time < head_partition_time {
+			return Err(
+					err_user!(
+							"measurement time values must be monotonically increasing for \
+							each sensor_id"));
+		}
+
 		// drop partitions from the tail until the quota is met
 		let mut required_bytes : u64 =
 				measurement.get_encoded_size() +
-				pmap_locked
+				state_locked
 						.partitions
 						.iter()
 						.fold(0, |s, x| s + x.get_storage_used_bytes());
 
 		while !quota.is_sufficient_bytes(required_bytes) {
-			if pmap_locked.partitions.len() == 0 {
+			if state_locked.partitions.len() == 0 {
 				return Err(err_server!("corrupt partition map"));
 			}
 
-			pmap_locked.partitions[0].delete()?;
-			let deleted_partition = pmap_locked.partitions.remove(0);
+			state_locked.partitions[0].delete()?;
+			let deleted_partition = state_locked.partitions.remove(0);
 			required_bytes -= deleted_partition.get_storage_used_bytes();
 		}
 
 		// append a new head partition if the current head partition is full
-		let head_partition_full = match pmap_locked.partitions.last() {
+		let head_partition_full = match state_locked.partitions.last() {
 			Some(p) => {
 				let psize = p.get_storage_used_bytes() + measurement.get_encoded_size();
 				psize > self.partition_size_max_bytes
@@ -100,12 +113,12 @@ impl Logfile {
 		};
 
 		if head_partition_full {
-			let new_partition = LogfilePartition::create()?;
-			pmap_locked.partitions.push(new_partition);
+			let new_partition = LogfilePartition::create(measurement.time)?;
+			state_locked.partitions.push(new_partition);
 		}
 
 		// insert the new measurement into the new head partition
-		let head_partition = match pmap_locked.partitions.last_mut() {
+		let head_partition = match state_locked.partitions.last_mut() {
 			Some(p) => p,
 			None => return Err(err_server!("corrupt partition map")),
 		};
