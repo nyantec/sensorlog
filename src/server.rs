@@ -74,6 +74,9 @@ Options:
    --clock_watchdog_trigger_backward=<threshold>
       Trigger the clock watchdog if the system time jumps backward by more than threshold
 
+   --partition_size=<bytes>
+      Set the partition size (default: 128KB)
+
    --daemonize
       Daemonize the server
 
@@ -114,6 +117,7 @@ fn run() -> Result<(), ::Error> {
 	flag_cfg.optopt("", "listen_http", "", "PORT");
 	flag_cfg.optopt("", "datadir", "", "PATH");
 	flag_cfg.optopt("", "quota_default", "", "QUOTA");
+	flag_cfg.optopt("", "partition_size", "", "BYTES");
 	flag_cfg.optopt("", "loglevel", "", "LEVEL");
 	flag_cfg.optflag("h", "help", "");
 	flag_cfg.optflag("v", "version", "");
@@ -165,6 +169,14 @@ fn run() -> Result<(), ::Error> {
 						&Some(ref v) => v,
 						&None => return Err(err_user!("missing option: --quota_default"))
 					})?);
+
+	if let Some(partition_size) = flags.opt_str("partition_size") {
+		logfile_map.set_partition_size_max_bytes(
+				match partition_size.parse::<u64>() {
+					Ok(v) => v,
+					Err(e) => return Err(err_user!("invalid partition size: {}", e))
+				});
+	}
 
 	// start logfile service
 	let logfile_service = Arc::new(logfile_service::LogfileService::new(logfile_map));

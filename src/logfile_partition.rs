@@ -21,7 +21,8 @@
 use ::measure::Measurement;
 
 pub struct LogfilePartition {
-
+	storage_used_bytes: u64,
+	file_offset: u64,
 }
 
 impl LogfilePartition {
@@ -29,14 +30,21 @@ impl LogfilePartition {
 	pub fn create() -> Result<LogfilePartition, ::Error> {
 		debug!("Creating new logfile partition");
 
-		let part = LogfilePartition {};
+		let part = LogfilePartition {
+			storage_used_bytes: 0,
+			file_offset: 0,
+		};
+
 		return Ok(part);
 	}
 
 	pub fn append_measurement(
-			&self,
+			&mut self,
 			measurement: &Measurement) -> Result<(), ::Error> {
 		debug!("Storing new measurement; time={}", measurement.time);
+		let measurement_size = measurement.get_encoded_size();
+		self.storage_used_bytes += measurement_size;
+		self.file_offset += measurement_size;
 		return Ok(());
 	}
 
@@ -46,7 +54,7 @@ impl LogfilePartition {
 	}
 
 	pub fn get_storage_used_bytes(&self) -> u64 {
-		return 0;
+		return self.storage_used_bytes;
 	}
 
 }

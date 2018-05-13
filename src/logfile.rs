@@ -27,6 +27,7 @@ use ::measure::Measurement;
 pub struct Logfile {
 	storage_quota: Mutex<StorageQuota>,
 	partition_map: Arc<RwLock<LogfilePartitionMap>>,
+	partition_size_max_bytes: u64,
 }
 
 pub struct LogfilePartitionMap {
@@ -35,7 +36,9 @@ pub struct LogfilePartitionMap {
 
 impl Logfile {
 
-	pub fn create(storage_quota: StorageQuota) -> Result<Logfile, ::Error> {
+	pub fn create(
+			storage_quota: StorageQuota,
+			partition_size_max_bytes: u64) -> Result<Logfile, ::Error> {
 		if storage_quota.is_zero() {
 			return Err(err_quota!("insufficient quota"));
 		}
@@ -45,7 +48,8 @@ impl Logfile {
 			storage_quota: Mutex::new(storage_quota),
 			partition_map: Arc::new(RwLock::new(LogfilePartitionMap {
 				partitions: Vec::<LogfilePartition>::new(),
-			}))
+			})),
+			partition_size_max_bytes: partition_size_max_bytes
 		};
 
 		return Ok(logfile);
