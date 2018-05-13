@@ -22,7 +22,7 @@ use std::path::{Path,PathBuf};
 use std::fs;
 use std::sync::{Arc,RwLock};
 use ::logfile::Logfile;
-use ::logfile_id::{LogfileID, LogfileFSID};
+use ::logfile_id::{LogfileID, LogfilePath};
 use ::logfile_config::LogfileConfig;
 
 pub struct LogfileDirectory {
@@ -43,7 +43,7 @@ impl LogfileDirectory {
 			logfile_config: &LogfileConfig) -> Result<Arc<Logfile>, ::Error> {
 		let logfile_path = self.path
 				.join("db")
-				.join(logfile_id.get_file_name());
+				.join(logfile_id.get_path().get_file_name());
 
 		let mut logfile = Logfile::create(
 				logfile_id.clone(),
@@ -55,11 +55,11 @@ impl LogfileDirectory {
 
 	pub fn load_logfile(
 			&self,
-			logfile_id: &LogfileFSID,
+			logfile_path: &LogfilePath,
 			logfile_config: &LogfileConfig) -> Result<Option<Arc<Logfile>>, ::Error> {
 		let logfile_path = self.path
 				.join("db")
-				.join(&logfile_id.fsid);
+				.join(&logfile_path.get_file_name());
 
 		let mut logfile = Logfile::open(
 				&logfile_path,
@@ -68,14 +68,14 @@ impl LogfileDirectory {
 		return Ok(logfile.map(|f| Arc::new(f)));
 	}
 
-	pub fn list_logfiles(&self) -> Result<Vec<LogfileFSID>, ::Error> {
-		let mut logfiles = Vec::<LogfileFSID>::new();
+	pub fn list_logfiles(&self) -> Result<Vec<LogfilePath>, ::Error> {
+		let mut logfiles = Vec::<LogfilePath>::new();
 
 		for dirent in fs::read_dir(self.path.join("db"))? {
 			let dirent = dirent?;
-			logfiles.push(LogfileFSID {
-				fsid: dirent.file_name().into_string()?
-			});
+			logfiles.push(
+					LogfilePath::from_file_name(
+							dirent.file_name().into_string()?));
 		}
 
 		return Ok(logfiles);
