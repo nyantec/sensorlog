@@ -36,7 +36,7 @@ impl LogfileDirectory {
 	pub fn open(path: &Path) -> Result<LogfileDirectory, ::Error> {
 		fs::create_dir_all(path.join(DATABASE_PATH))?;
 
-		let logfile_directory =  LogfileDirectory {
+		let logfile_directory = LogfileDirectory {
 			path: path.to_owned(),
 		};
 

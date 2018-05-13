@@ -18,21 +18,22 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use std::path::Path;
+use std::path::{Path,PathBuf};
 use std::fs;
-use std::io::{Read,Write,Seek,SeekFrom};
-use ::logfile_id::LogfileID;
+use std::io::{Read,Seek,SeekFrom};
 use ::logfile_partition::LogfilePartition;
 use ::measure::Measurement;
 
 pub struct LogfileReader<'a> {
+	path: PathBuf,
 	partitions: &'a Vec<LogfilePartition>,
 }
 
 impl<'a> LogfileReader<'a> {
 
-	pub fn new(partitions: &'a Vec<LogfilePartition>) -> LogfileReader<'a> {
+	pub fn new(path: &Path, partitions: &'a Vec<LogfilePartition>) -> LogfileReader<'a> {
 		return LogfileReader {
+			path: path.to_owned(),
 			partitions: partitions
 		};
 	}

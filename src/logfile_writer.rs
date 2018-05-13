@@ -20,9 +20,7 @@
  */
 use std::path::Path;
 use std::fs;
-use std::io::{Read,Write,Seek,SeekFrom};
-use ::logfile_id::LogfileID;
-use ::logfile_partition::LogfilePartition;
+use std::io::{Write,Seek,SeekFrom};
 use ::measure::Measurement;
 
 pub fn append(

@@ -21,7 +21,7 @@
 use std;
 
 #[derive(Debug)]
-pub enum ErrorCode { InternalServerError, NotFound, BadRequest, QuotaError }
+pub enum ErrorCode { InternalServerError, BadRequest, QuotaError }
 
 #[derive(Debug)]
 pub struct Error {

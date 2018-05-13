@@ -158,7 +158,7 @@ impl Logfile {
 	}
 
 	pub fn fetch_last_measurement(&self) -> Result<Option<Measurement>, ::Error> {
-		let mut storage_locked = match self.storage.read() {
+		let storage_locked = match self.storage.read() {
 			Ok(l) => l,
 			Err(_) => {
 				error!("lock is poisoned; aborting...");
@@ -166,7 +166,10 @@ impl Logfile {
 			}
 		};
 
-		let reader = LogfileReader::new(&storage_locked.partitions);
+		let reader = LogfileReader::new(
+				&storage_locked.path,
+				&storage_locked.partitions);
+
 		return reader.fetch_last_measurement();
 	}
 

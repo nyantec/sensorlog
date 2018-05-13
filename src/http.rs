@@ -167,10 +167,6 @@ impl hyper::server::Service for HTTPHandler {
 								Response::new()
 										.with_status(StatusCode::BadRequest)
 										.with_body(err.to_string()),
-						::ErrorCode::NotFound =>
-								Response::new()
-										.with_status(StatusCode::NotFound)
-										.with_body(err.to_string()),
 						::ErrorCode::InternalServerError =>
 								Response::new()
 										.with_status(StatusCode::InternalServerError)
