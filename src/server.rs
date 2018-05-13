@@ -35,6 +35,8 @@ mod api_json;
 mod http;
 mod logfile;
 mod logfile_id;
+mod logfile_config;
+mod logfile_directory;
 mod logfile_map;
 mod logfile_partition;
 mod logfile_service;
@@ -153,21 +155,13 @@ fn run() -> Result<(), ::Error> {
 
 	env_logger::init();
 
-	// open database
+	// start server
 	info!("sensorlog v{}", VERSION);
 
-	let datadir = match flags.opt_str("datadir") {
-		Some(v) => v,
-		None => return Err(err_user!("missing option: --datadir"))
-	};
-
-	let mut logfile_map = match logfile_map::LogfileMap::open(&Path::new(&datadir)) {
-		Ok(v) => v,
-		Err(e) => return Err(err_server!("error while opening database: {}", e))
-	};
-
 	// configure storage quotas
-	logfile_map.set_default_storage_quota(
+	let mut logfile_config = logfile_config::LogfileConfig::new();
+
+	logfile_config.set_default_storage_quota(
 			quota::StorageQuota::parse_string(
 					&match &flags.opt_str("quota_default") {
 						&Some(ref v) => v,
@@ -175,12 +169,27 @@ fn run() -> Result<(), ::Error> {
 					})?);
 
 	if let Some(partition_size) = flags.opt_str("partition_size") {
-		logfile_map.set_default_partition_size_bytes(
+		logfile_config.set_default_partition_size_bytes(
 				match partition_size.parse::<u64>() {
 					Ok(v) => v,
 					Err(e) => return Err(err_user!("invalid partition size: {}", e))
 				});
 	}
+
+	// open database
+	let datadir = match flags.opt_str("datadir") {
+		Some(v) => v,
+		None => return Err(err_user!("missing option: --datadir"))
+	};
+
+	let logfile_map = logfile_map::LogfileMap::open(
+			logfile_directory::LogfileDirectory::new(&Path::new(&datadir)),
+			logfile_config);
+
+	let mut logfile_map = match logfile_map {
+		Ok(v) => v,
+		Err(e) => return Err(err_server!("error while opening database: {}", e))
+	};
 
 	// start logfile service
 	let logfile_service = Arc::new(logfile_service::LogfileService::new(logfile_map));

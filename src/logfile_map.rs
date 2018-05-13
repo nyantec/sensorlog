@@ -22,33 +22,35 @@ use std::collections::HashMap;
 use std::sync::{Arc,RwLock};
 use std::path::{Path,PathBuf};
 use std::process;
+use std::fs;
 use ::logfile::Logfile;
 use ::logfile_id::LogfileID;
+use ::logfile_directory::LogfileDirectory;
+use ::logfile_config::LogfileConfig;
 use ::quota::StorageQuota;
 
 pub struct LogfileMap {
-	path: PathBuf,
+	directory: LogfileDirectory,
+	config: LogfileConfig,
 	logfiles: Arc<RwLock<HashMap<String, Arc<Logfile>>>>,
-	quota_default: StorageQuota,
-	partition_size_bytes_default: Option<u64>,
 }
 
 impl LogfileMap {
 
-	fn new(path: &Path) -> LogfileMap {
-		return LogfileMap {
-			path: path.to_owned(),
-			logfiles: Arc::new(RwLock::new(HashMap::<String, Arc<Logfile>>::new())),
-			quota_default: StorageQuota::Zero,
-			partition_size_bytes_default: None
-		};
-	}
+	pub fn open(
+			directory: LogfileDirectory,
+			config: LogfileConfig) -> Result<LogfileMap, ::Error> {
+		info!("Opening logfile database at {:?}", directory.path);
+		let logfile_map = HashMap::<String, Arc<Logfile>>::new();
+		for logfile_id in directory.list_logfiles() {
+			// TODO: open logfile
+		}
 
-	pub fn open(path: &Path) -> Result<LogfileMap, ::Error> {
-		info!("Opening logfile database at {:?}", path);
-
-		let logfile_map = LogfileMap::new(path);
-		return Ok(logfile_map);
+		return Ok(LogfileMap {
+			directory: directory,
+			config: config,
+			logfiles: Arc::new(RwLock::new(logfile_map)),
+		});
 	}
 
 	pub fn lookup(self: &LogfileMap, logfile_id: &str) -> Option<Arc<Logfile>> {
@@ -87,44 +89,11 @@ impl LogfileMap {
 		}
 
 		// if the logfile doesn't exist yet, create a new one
-		let logfile = self.create_logfile(logfile_id)?;
+		let logfile = self.directory.create_logfile(logfile_id, &self.config)?;
 		logfiles_locked.insert(logfile_id.get_string(), logfile.clone());
 		return Ok(logfile);
 	}
 
-	pub fn create_logfile(&self, logfile_id: &LogfileID) -> Result<Arc<Logfile>, ::Error> {
-		let logfile_path = self.path
-				.join("db")
-				.join(logfile_id.get_file_name());
-
-		let mut logfile = Logfile::create(
-				logfile_id.clone(),
-				&logfile_path,
-				self.quota_default.clone())?;
-
-		if let Some(partition_size) = self.partition_size_bytes_default {
-			logfile.set_partition_size_bytes(partition_size);
-		}
-
-		return Ok(Arc::new(logfile));
-	}
-
-	pub fn set_storage_quota(
-			&mut self,
-			logfile_id: &LogfileID,
-			quota: StorageQuota) -> Result<(), ::Error> {
-		let logfile = self.lookup_or_create(logfile_id)?;
-		logfile.set_storage_quota(quota);
-		return Ok(());
-	}
-
-	pub fn set_default_storage_quota(&mut self, quota: StorageQuota) {
-		self.quota_default = quota;
-	}
-
-	pub fn set_default_partition_size_bytes(&mut self, limit: u64) {
-		self.partition_size_bytes_default = Some(limit);
-	}
-
 }
+
 

@@ -79,3 +79,11 @@ impl std::convert::From<std::io::Error> for Error {
 
 }
 
+impl std::convert::From<std::ffi::OsString> for Error {
+
+	fn from(e: std::ffi::OsString) -> Error {
+		return err_server!("FFI error: {:?}", e);
+	}
+
+}
+

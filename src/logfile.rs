@@ -23,12 +23,12 @@ use std::process;
 use std::path::{Path,PathBuf};
 use std::fs;
 use ::logfile_id::LogfileID;
+use ::logfile_config::LogfileConfig;
 use ::logfile_partition::LogfilePartition;
 use ::logfile_transaction::LogfileTransaction;
 use ::quota::StorageQuota;
 use ::measure::Measurement;
 
-const DEFAULT_PARTITION_SIZE_MAX_BYTES : u64 = 1024 * 128;
 const TRANSACTION_FILE_NAME : &'static str = "tx.lock";
 
 pub struct Logfile {
@@ -49,7 +49,8 @@ impl Logfile {
 	pub fn create(
 			id: LogfileID,
 			path: &Path,
-			storage_quota: StorageQuota) -> Result<Logfile, ::Error> {
+			config: &LogfileConfig) -> Result<Logfile, ::Error> {
+		let storage_quota = config.get_storage_quota_for(&id);
 		if storage_quota.is_zero() {
 			return Err(err_quota!("insufficient quota"));
 		}
@@ -59,12 +60,12 @@ impl Logfile {
 
 		let logfile = Logfile {
 			storage: Arc::new(RwLock::new(LogfileStorage {
-				id: id,
+				id: id.clone(),
 				path: path.to_owned(),
 				storage_quota: storage_quota,
 				partitions: Vec::<LogfilePartition>::new(),
 				partitions_deleted: Vec::<LogfilePartition>::new(),
-				partition_size_bytes: DEFAULT_PARTITION_SIZE_MAX_BYTES
+				partition_size_bytes: config.get_partition_size_for(&id),
 			})),
 		};
 
