@@ -33,6 +33,7 @@ pub struct Logfile {
 pub struct LogfileStorage {
 	storage_quota: StorageQuota,
 	partitions: Vec<LogfilePartition>,
+	partitions_deleted: Vec<LogfilePartition>,
 	partition_size_bytes: u64,
 }
 
@@ -48,6 +49,7 @@ impl Logfile {
 			storage: Arc::new(RwLock::new(LogfileStorage {
 				storage_quota: storage_quota,
 				partitions: Vec::<LogfilePartition>::new(),
+				partitions_deleted: Vec::<LogfilePartition>::new(),
 				partition_size_bytes: DEFAULT_PARTITION_SIZE_MAX_BYTES
 			})),
 		};
@@ -89,10 +91,13 @@ impl Logfile {
 		storage_locked.allocate(measurement_size)?;
 
 		// insert the new measurement into the head partition
-		return match storage_locked.partitions.last_mut() {
-			Some(p) => p.append_measurement(measurement),
-			None => Err(err_server!("corrupt partition map")),
+		match storage_locked.partitions.last_mut() {
+			Some(p) => p.append_measurement(measurement)?,
+			None => return Err(err_server!("corrupt partition map")),
 		};
+
+		// commit the transaction to disk
+		return storage_locked.commit();
 	}
 
 	pub fn get_storage_quota(&self) -> StorageQuota {
@@ -110,6 +115,19 @@ impl Logfile {
 }
 
 impl LogfileStorage {
+
+	pub fn commit(&mut self) -> Result<(), ::Error> {
+		// write transaction to disk
+
+		// drop deleted partitions
+		for partition in &mut self.partitions_deleted {
+			partition.delete()?;
+		}
+
+		self.partitions_deleted.clear();
+
+		return Ok(());
+	}
 
 	pub fn allocate(&mut self, new_bytes: u64) -> Result<(), ::Error> {
 		// drop partitions from the tail until the quota is met
@@ -145,9 +163,9 @@ impl LogfileStorage {
 				return Err(err_server!("corrupt partition map"));
 			}
 
-			self.partitions[0].delete()?;
 			let deleted_partition = self.partitions.remove(0);
 			required_bytes -= deleted_partition.get_storage_used_bytes();
+			self.partitions_deleted.push(deleted_partition);
 		}
 
 		return Ok(());
