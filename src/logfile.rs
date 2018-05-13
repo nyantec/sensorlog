@@ -24,32 +24,32 @@ use ::logfile_partition::LogfilePartition;
 use ::quota::StorageQuota;
 use ::measure::Measurement;
 
+const DEFAULT_PARTITION_SIZE_MAX_BYTES : u64 = 1024 * 128;
+
 pub struct Logfile {
-	storage_quota: Mutex<StorageQuota>,
 	state: Arc<RwLock<LogfileState>>,
-	partition_size_max_bytes: u64,
 }
 
 pub struct LogfileState {
+	storage_quota: StorageQuota,
 	partitions: Vec<LogfilePartition>,
+	partition_size_bytes: u64,
 }
 
 impl Logfile {
 
-	pub fn create(
-			storage_quota: StorageQuota,
-			partition_size_max_bytes: u64) -> Result<Logfile, ::Error> {
+	pub fn create(storage_quota: StorageQuota) -> Result<Logfile, ::Error> {
 		if storage_quota.is_zero() {
 			return Err(err_quota!("insufficient quota"));
 		}
 
 		debug!("Creating new logfile");
 		let logfile = Logfile {
-			storage_quota: Mutex::new(storage_quota),
 			state: Arc::new(RwLock::new(LogfileState {
+				storage_quota: storage_quota,
 				partitions: Vec::<LogfilePartition>::new(),
+				partition_size_bytes: DEFAULT_PARTITION_SIZE_MAX_BYTES
 			})),
-			partition_size_max_bytes: partition_size_max_bytes
 		};
 
 		return Ok(logfile);
@@ -58,10 +58,7 @@ impl Logfile {
 	pub fn append_measurement(
 			&self,
 			measurement: &Measurement) -> Result<(), ::Error> {
-		let quota = self.get_storage_quota();
-		if !quota.is_sufficient_bytes(measurement.get_encoded_size() as u64) {
-			return Err(err_quota!("insufficient quota"));
-		}
+		let measurement_size = measurement.get_encoded_size() as u64;
 
 		// lock the state
 		let mut state_locked = match self.state.write() {
@@ -72,66 +69,92 @@ impl Logfile {
 			}
 		};
 
-		// check that the measurement time is monotonically increasing
-		let head_partition_time = match state_locked.partitions.last() {
-			Some(p) => p.get_time_head(),
-			None => 0,
-		};
+		// check the quota and that the measurement time is monotonically increasing
+		let quota = state_locked.storage_quota.clone();
+		if !quota.is_sufficient_bytes(measurement_size) {
+			return Err(err_quota!("insufficient quota"));
+		}
 
-		if measurement.time < head_partition_time {
+		if measurement.time < state_locked.get_time_head() {
 			return Err(
 					err_user!(
 							"measurement time values must be monotonically increasing for \
 							each sensor_id"));
 		}
 
+		// allocate storage for the new measurement
+		state_locked.allocate_storage(measurement_size)?;
+
+		// insert the new measurement into the head partition
+		return match state_locked.partitions.last_mut() {
+			Some(p) => p.append_measurement(measurement),
+			None => Err(err_server!("corrupt partition map")),
+		};
+	}
+
+	pub fn get_storage_quota(&self) -> StorageQuota {
+		return self.state.read().unwrap().storage_quota.clone();
+	}
+
+	pub fn set_storage_quota(&self, quota: StorageQuota) {
+		self.state.write().unwrap().storage_quota = quota;
+	}
+
+	pub fn set_partition_size_bytes(&mut self, partition_size: u64) {
+		self.state.write().unwrap().partition_size_bytes = partition_size;
+	}
+
+}
+
+impl LogfileState {
+
+	pub fn get_time_head(&self) -> u64 {
+		return match self.partitions.last() {
+			Some(p) => p.get_time_head(),
+			None => 0,
+		};
+	}
+
+	pub fn allocate_storage(&mut self, new_bytes: u64) -> Result<(), ::Error> {
 		// drop partitions from the tail until the quota is met
+		self.rotate_storage(new_bytes)?;
+
+		// append a new head partition if the current head partition is full
+		let new_partition = match self.partitions.last() {
+			Some(partition) =>
+				if partition.get_storage_used_bytes() + new_bytes > self.partition_size_bytes {
+					Some(LogfilePartition::create(partition.get_time_head())?)
+				} else {
+					None
+				},
+			None => Some(LogfilePartition::create(0)?)
+		};
+
+		if let Some(partition) = new_partition {
+			self.partitions.push(partition);
+		}
+
+		return Ok(());
+	}
+
+	pub fn rotate_storage(&mut self, new_bytes: u64) -> Result<(), ::Error> {
 		let mut required_bytes : u64 =
-				measurement.get_encoded_size() +
-				state_locked
+				new_bytes + self
 						.partitions
 						.iter()
 						.fold(0, |s, x| s + x.get_storage_used_bytes());
 
-		while !quota.is_sufficient_bytes(required_bytes) {
-			if state_locked.partitions.len() == 0 {
+		while !self.storage_quota.is_sufficient_bytes(required_bytes) {
+			if self.partitions.len() == 0 {
 				return Err(err_server!("corrupt partition map"));
 			}
 
-			state_locked.partitions[0].delete()?;
-			let deleted_partition = state_locked.partitions.remove(0);
+			self.partitions[0].delete()?;
+			let deleted_partition = self.partitions.remove(0);
 			required_bytes -= deleted_partition.get_storage_used_bytes();
 		}
 
-		// append a new head partition if the current head partition is full
-		let head_partition_full = match state_locked.partitions.last() {
-			Some(p) => {
-				let psize = p.get_storage_used_bytes() + measurement.get_encoded_size();
-				psize > self.partition_size_max_bytes
-			},
-			None => true,
-		};
-
-		if head_partition_full {
-			let new_partition = LogfilePartition::create(measurement.time)?;
-			state_locked.partitions.push(new_partition);
-		}
-
-		// insert the new measurement into the new head partition
-		let head_partition = match state_locked.partitions.last_mut() {
-			Some(p) => p,
-			None => return Err(err_server!("corrupt partition map")),
-		};
-
-		return head_partition.append_measurement(measurement);
-	}
-
-	pub fn get_storage_quota(&self) -> StorageQuota {
-		return self.storage_quota.lock().unwrap().clone();
-	}
-
-	pub fn set_storage_quota(&self, quota: StorageQuota) {
-		*self.storage_quota.lock().unwrap() = quota;
+		return Ok(());
 	}
 
 }

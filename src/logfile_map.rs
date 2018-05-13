@@ -25,13 +25,11 @@ use std::process;
 use ::logfile::Logfile;
 use ::quota::StorageQuota;
 
-const DEFAULT_PARTITION_SIZE_MAX_BYTES : u64 = 1024 * 128;
-
 pub struct LogfileMap {
 	path: PathBuf,
 	logfiles: Arc<RwLock<HashMap<String, Arc<Logfile>>>>,
 	quota_default: StorageQuota,
-	partition_size_max_bytes: u64,
+	partition_size_bytes_default: Option<u64>,
 }
 
 impl LogfileMap {
@@ -41,7 +39,7 @@ impl LogfileMap {
 			path: path.to_owned(),
 			logfiles: Arc::new(RwLock::new(HashMap::<String, Arc<Logfile>>::new())),
 			quota_default: StorageQuota::Zero,
-			partition_size_max_bytes: DEFAULT_PARTITION_SIZE_MAX_BYTES
+			partition_size_bytes_default: None
 		};
 	}
 
@@ -88,13 +86,19 @@ impl LogfileMap {
 		}
 
 		// if the logfile doesn't exist yet, create a new one
-		let logfile = Arc::new(
-				Logfile::create(
-						self.quota_default.clone(),
-						self.partition_size_max_bytes)?);
-
+		let logfile = self.create_logfile(logfile_id)?;
 		logfiles_locked.insert(logfile_id.to_string(), logfile.clone());
 		return Ok(logfile);
+	}
+
+	pub fn create_logfile(&self, logfile_id: &str) -> Result<Arc<Logfile>, ::Error> {
+		let mut logfile = Logfile::create(self.quota_default.clone())?;
+
+		if let Some(partition_size) = self.partition_size_bytes_default {
+			logfile.set_partition_size_bytes(partition_size);
+		}
+
+		return Ok(Arc::new(logfile));
 	}
 
 	pub fn set_storage_quota(
@@ -110,8 +114,8 @@ impl LogfileMap {
 		self.quota_default = quota;
 	}
 
-	pub fn set_partition_size_max_bytes(&mut self, limit: u64) {
-		self.partition_size_max_bytes = limit;
+	pub fn set_default_partition_size_bytes(&mut self, limit: u64) {
+		self.partition_size_bytes_default = Some(limit);
 	}
 
 }

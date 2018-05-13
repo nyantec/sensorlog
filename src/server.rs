@@ -172,7 +172,7 @@ fn run() -> Result<(), ::Error> {
 					})?);
 
 	if let Some(partition_size) = flags.opt_str("partition_size") {
-		logfile_map.set_partition_size_max_bytes(
+		logfile_map.set_default_partition_size_bytes(
 				match partition_size.parse::<u64>() {
 					Ok(v) => v,
 					Err(e) => return Err(err_user!("invalid partition size: {}", e))
