@@ -22,6 +22,7 @@ use std::sync::{Arc,Mutex,RwLock};
 use std::process;
 use std::path::{Path,PathBuf};
 use std::fs;
+use ::logfile_id::LogfileID;
 use ::logfile_partition::LogfilePartition;
 use ::logfile_transaction::LogfileTransaction;
 use ::quota::StorageQuota;
@@ -35,6 +36,7 @@ pub struct Logfile {
 }
 
 pub struct LogfileStorage {
+	id: LogfileID,
 	path: PathBuf,
 	storage_quota: StorageQuota,
 	partitions: Vec<LogfilePartition>,
@@ -45,6 +47,7 @@ pub struct LogfileStorage {
 impl Logfile {
 
 	pub fn create(
+			id: LogfileID,
 			path: &Path,
 			storage_quota: StorageQuota) -> Result<Logfile, ::Error> {
 		if storage_quota.is_zero() {
@@ -56,6 +59,7 @@ impl Logfile {
 
 		let logfile = Logfile {
 			storage: Arc::new(RwLock::new(LogfileStorage {
+				id: id,
 				path: path.to_owned(),
 				storage_quota: storage_quota,
 				partitions: Vec::<LogfilePartition>::new(),
@@ -128,7 +132,10 @@ impl LogfileStorage {
 
 	pub fn commit(&mut self) -> Result<(), ::Error> {
 		// write transaction to disk
-		let transaction = LogfileTransaction::from_partition_map(&self.partitions);
+		let transaction = LogfileTransaction::new(
+				&self.id,
+				&self.partitions);
+
 		let transaction_path = self.path.join(TRANSACTION_FILE_NAME);
 		transaction.write_file(&transaction_path)?;
 

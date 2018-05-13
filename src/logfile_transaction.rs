@@ -22,10 +22,12 @@ use std::path::Path;
 use std::fs;
 use std::io::Write;
 use serde_json as json;
+use ::logfile_id::LogfileID;
 use ::logfile_partition::LogfilePartition;
 
 #[derive(Serialize, Deserialize)]
 pub struct LogfileTransaction {
+	id: String,
 	partitions: Vec<LogfileTransactionPartition>,
 }
 
@@ -39,7 +41,9 @@ pub struct LogfileTransactionPartition {
 
 impl LogfileTransaction {
 
-	pub fn from_partition_map(partitions: &Vec<LogfilePartition>) -> LogfileTransaction {
+	pub fn new(
+			id: &LogfileID,
+			partitions: &Vec<LogfilePartition>) -> LogfileTransaction {
 		let partitions = partitions.iter().map(|partition| {
 			return LogfileTransactionPartition {
 				file_name: partition.get_file_name(),
@@ -50,6 +54,7 @@ impl LogfileTransaction {
 		});
 
 		return LogfileTransaction {
+			id: id.get_string(),
 			partitions: partitions.collect()
 		};
 	}

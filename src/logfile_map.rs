@@ -98,6 +98,7 @@ impl LogfileMap {
 				.join(logfile_id.get_file_name());
 
 		let mut logfile = Logfile::create(
+				logfile_id.clone(),
 				&logfile_path,
 				self.quota_default.clone())?;
 
