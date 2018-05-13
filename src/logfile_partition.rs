@@ -21,6 +21,7 @@
 use ::measure::Measurement;
 
 pub struct LogfilePartition {
+	time_head: u64,
 	storage_used_bytes: u64,
 	file_offset: u64,
 }
@@ -28,9 +29,10 @@ pub struct LogfilePartition {
 impl LogfilePartition {
 
 	pub fn create() -> Result<LogfilePartition, ::Error> {
-		debug!("Creating new logfile partition");
+		info!("Creating new logfile partition");
 
 		let part = LogfilePartition {
+			time_head: 0,
 			storage_used_bytes: 0,
 			file_offset: 0,
 		};
@@ -41,15 +43,27 @@ impl LogfilePartition {
 	pub fn append_measurement(
 			&mut self,
 			measurement: &Measurement) -> Result<(), ::Error> {
-		debug!("Storing new measurement; time={}", measurement.time);
+		if measurement.time < self.time_head {
+			return Err(
+					err_user!(
+							"measurement time values must be monotonically increasing for \
+							each sensor_id"));
+		}
+
+		debug!(
+				"Storing new measurement; time={}, foffset={}",
+				measurement.time,
+				self.file_offset);
+
 		let measurement_size = measurement.get_encoded_size();
+		self.time_head = measurement.time;
 		self.storage_used_bytes += measurement_size;
 		self.file_offset += measurement_size;
 		return Ok(());
 	}
 
 	pub fn delete(&self) -> Result<(), ::Error> {
-		debug!("Deleting logfile partition");
+		info!("Deleting logfile partition");
 		return Ok(());
 	}
 

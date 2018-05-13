@@ -38,6 +38,7 @@ mod logfile_partition;
 mod logfile_service;
 mod quota;
 mod measure;
+mod time;
 
 use std::env;
 use std::io::Write;

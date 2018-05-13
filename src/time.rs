@@ -18,36 +18,19 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use ::logfile_service::LogfileService;
-use ::measure::Measurement;
+use std::io;
+use std::time::{SystemTime, UNIX_EPOCH};
 
-#[derive(Serialize, Deserialize)]
-pub struct StoreMeasurementRequest {
-	time: Option<u64>,
-	sensor_id: String,
-	data: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct StoreMeasurementResponse {
-	success: bool
-}
-
-pub fn store_measurement(
-		logfile_service: &LogfileService,
-		req: StoreMeasurementRequest) -> Result<StoreMeasurementResponse, ::Error> {
-	debug!("Storing measurement: sensor_id={}", req.sensor_id);
-
-	let measurement = Measurement {
-		time: req.time.unwrap_or(::time::get_unix_microseconds()?),
-		data: req.data.as_bytes().to_vec(),
+pub fn get_unix_seconds() -> Result<u64, ::Error> {
+	return match SystemTime::now().duration_since(UNIX_EPOCH) {
+		Ok(t) => Ok(t.as_secs()),
+		Err(_) => Err(err_server!("cannot get current timestamp"))
 	};
-
-	let logfile = logfile_service.logfile_map.lookup_or_create(&req.sensor_id)?;
-	logfile.append_measurement(&measurement)?;
-
-	return Ok(StoreMeasurementResponse {
-		success: true
-	});
 }
 
+pub fn get_unix_microseconds() -> Result<u64, ::Error> {
+	return match SystemTime::now().duration_since(UNIX_EPOCH) {
+		Ok(t) => Ok(t.as_secs() * 1000000 + t.subsec_nanos() as u64 / 1000),
+		Err(_) => Err(err_server!("cannot get current timestamp"))
+	};
+}

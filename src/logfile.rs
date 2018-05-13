@@ -92,7 +92,10 @@ impl Logfile {
 
 		// append a new head partition if the current head partition is full
 		let head_partition_full = match pmap_locked.partitions.last() {
-			Some(p) => false, // FIXME
+			Some(p) => {
+				let psize = p.get_storage_used_bytes() + measurement.get_encoded_size();
+				psize > self.partition_size_max_bytes
+			},
 			None => true,
 		};
 
