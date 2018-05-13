@@ -60,7 +60,7 @@ impl std::fmt::Display for Error {
 
 impl std::convert::From<()> for Error {
 
-	fn from(e: ()) -> Error {
+	fn from(_: ()) -> Error {
 		return err_server!("error: unknown error");
 	}
 

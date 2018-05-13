@@ -32,11 +32,11 @@ extern crate serde_json;
 mod api;
 mod api_json;
 mod http;
+mod logfile;
 mod logfile_map;
 mod logfile_service;
 
 use std::env;
-use std::io;
 use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;

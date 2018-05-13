@@ -18,18 +18,13 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use std::io::prelude::*;
-use std::fs::File;
-use std::fs;
-use std::path::{Path,PathBuf};
 use std::net::SocketAddr;
-use std::sync::{Arc,Mutex};
+use std::sync::Arc;
 use futures;
 use futures::future::Future;
 use futures::Stream;
 use futures_cpupool::CpuPool;
 use hyper::{StatusCode, Method, Uri};
-use hyper::header::ContentLength;
 use hyper::server::{Http, Request, Response, Service};
 use ::logfile_service::LogfileService;
 
@@ -144,7 +139,7 @@ impl Service for HTTPHandler {
 
 			let body_chunks = match body.collect().wait() {
 				Ok(v) => v,
-				Err(e) =>
+				Err(_) =>
 					return futures::future::ok(
 							Response::new()
 									.with_status(StatusCode::InternalServerError)
@@ -177,7 +172,7 @@ impl Service for HTTPHandler {
 			return futures::future::ok(res);
 		});
 
-		return res_future.boxed();
+		return Box::new(res_future);
 	}
 
 }
