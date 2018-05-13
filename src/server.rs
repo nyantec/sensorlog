@@ -155,7 +155,6 @@ fn run() -> Result<(), ::Error> {
 
 	env_logger::init();
 
-	// start server
 	info!("sensorlog v{}", VERSION);
 
 	// configure storage quotas
@@ -176,28 +175,13 @@ fn run() -> Result<(), ::Error> {
 				});
 	}
 
-	// open data dir
+	// start logging service
 	let datadir = match flags.opt_str("datadir") {
 		Some(v) => PathBuf::from(v),
 		None => return Err(err_user!("missing option: --datadir"))
 	};
 
-	if !datadir.exists() {
-		return Err(err_user!("data directory does not exist: {:?}", datadir));
-	}
-
-	// open logfile map
-	let logfile_map = logfile_map::LogfileMap::open(
-			logfile_directory::LogfileDirectory::open(&datadir)?,
-			logfile_config);
-
-	let logfile_map = match logfile_map {
-		Ok(v) => v,
-		Err(e) => return Err(err_server!("error while opening database: {}", e))
-	};
-
-	// start logfile service
-	let service = Arc::new(service::Service::new(logfile_map));
+	let service = Arc::new(service::Service::start(&datadir, logfile_config)?);
 
 	// start http server
 	http::start_server(
