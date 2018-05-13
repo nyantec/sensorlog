@@ -21,10 +21,10 @@
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 use serde_json as json;
-use ::logfile_service::LogfileService;
+use ::service::Service;
 
 pub fn call_str(
-		service: &LogfileService,
+		service: &Service,
 		method: &str,
 		req: &str) -> Result<String, ::Error> {
 	let req_json = match json::from_str(&req) {
@@ -42,7 +42,7 @@ pub fn call_str(
 }
 
 pub fn call_json(
-		service: &LogfileService,
+		service: &Service,
 		method: &str,
 		req: &json::Value) -> Result<json::Value, ::Error> {
 	debug!("Executing API request: method={}", method);
@@ -54,8 +54,8 @@ pub fn call_json(
 }
 
 fn call<RequestType: DeserializeOwned, ResponseType: Serialize>(
-		service: &LogfileService,
-		method: &Fn(&LogfileService, RequestType) -> Result<ResponseType, ::Error>,
+		service: &Service,
+		method: &Fn(&Service, RequestType) -> Result<ResponseType, ::Error>,
 		params: &json::Value) -> Result<json::Value, ::Error> {
 	let req : RequestType = match json::from_value(params.to_owned()) {
 		Ok(r) => r,

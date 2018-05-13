@@ -39,7 +39,7 @@ mod logfile_config;
 mod logfile_directory;
 mod logfile_map;
 mod logfile_partition;
-mod logfile_service;
+mod service;
 mod logfile_transaction;
 mod quota;
 mod measure;
@@ -192,11 +192,11 @@ fn run() -> Result<(), ::Error> {
 	};
 
 	// start logfile service
-	let logfile_service = Arc::new(logfile_service::LogfileService::new(logfile_map));
+	let service = Arc::new(service::Service::new(logfile_map));
 
 	// start http server
 	http::start_server(
-			logfile_service,
+			service,
 			http::ServerOptions {
 				listen_addr: match flags.opt_str("listen_http") {
 					Some(addr) => addr,

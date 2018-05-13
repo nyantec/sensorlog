@@ -20,14 +20,14 @@
  */
 use ::logfile_map::LogfileMap;
 
-pub struct LogfileService {
+pub struct Service {
   pub logfile_map: LogfileMap,
 }
 
-impl LogfileService {
+impl Service {
 
-  pub fn new(logfile_map: LogfileMap) -> LogfileService {
-    return LogfileService {
+  pub fn new(logfile_map: LogfileMap) -> Service {
+    return Service {
       logfile_map: logfile_map
     };
   }

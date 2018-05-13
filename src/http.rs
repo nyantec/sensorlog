@@ -24,16 +24,17 @@ use futures;
 use futures::future::Future;
 use futures::Stream;
 use futures_cpupool::CpuPool;
+use hyper;
 use hyper::{StatusCode, Method, Uri};
-use hyper::server::{Http, Request, Response, Service};
-use ::logfile_service::LogfileService;
+use hyper::server::{Http, Request, Response};
+use ::service::Service;
 
 pub struct ServerOptions {
 	pub listen_addr: String,
 }
 
 pub fn start_server(
-		logfile_service: Arc<::logfile_service::LogfileService>,
+		service: Arc<::service::Service>,
 		opts: ServerOptions) -> Result<(), ::Error> {
 	let listen_addr = match opts.listen_addr.parse::<SocketAddr>() {
 		Ok(addr) => addr,
@@ -43,7 +44,7 @@ pub fn start_server(
 	info!("Listening for HTTP connections on {}", &opts.listen_addr);
 	let server_factory = Http::new().bind(
 			&listen_addr,
-			move || Ok(HTTPHandler::new(logfile_service.clone())));
+			move || Ok(HTTPHandler::new(service.clone())));
 
 	let server = match server_factory {
 		Ok(server) => server,
@@ -58,7 +59,7 @@ pub fn start_server(
 }
 
 fn serve(
-		service: &LogfileService,
+		service: &Service,
 		method: Method,
 		uri: Uri,
 		body: &Vec<u8>) -> Result<Response, ::Error> {
@@ -85,7 +86,7 @@ fn serve(
 }
 
 fn serve_api(
-		service: &LogfileService,
+		service: &Service,
 		method: Method,
 		uri: Uri,
 		body: &Vec<u8>) -> Result<Response, ::Error> {
@@ -111,13 +112,13 @@ fn serve_api(
 
 
 pub struct HTTPHandler {
-	service: Arc<LogfileService>,
+	service: Arc<Service>,
 	thread_pool: CpuPool,
 }
 
 impl HTTPHandler {
 
-	pub fn new(service: Arc<LogfileService>) -> HTTPHandler {
+	pub fn new(service: Arc<Service>) -> HTTPHandler {
 		return HTTPHandler {
 			thread_pool: CpuPool::new_num_cpus(),
 			service: service
@@ -126,7 +127,7 @@ impl HTTPHandler {
 
 }
 
-impl Service for HTTPHandler {
+impl hyper::server::Service for HTTPHandler {
 
 	type Request = Request;
 	type Response = Response;

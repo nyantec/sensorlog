@@ -18,7 +18,7 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use ::logfile_service::LogfileService;
+use ::service::Service;
 use ::logfile_id::LogfileID;
 use ::measure::Measurement;
 
@@ -35,7 +35,7 @@ pub struct StoreMeasurementResponse {
 }
 
 pub fn store_measurement(
-		logfile_service: &LogfileService,
+		service: &Service,
 		req: StoreMeasurementRequest) -> Result<StoreMeasurementResponse, ::Error> {
 	debug!("Storing measurement: sensor_id={}", req.sensor_id);
 
@@ -45,7 +45,7 @@ pub fn store_measurement(
 	};
 
 	let logfile_id = LogfileID::from_string(req.sensor_id.to_owned());
-	let logfile = logfile_service.logfile_map.lookup_or_create(&logfile_id)?;
+	let logfile = service.logfile_map.lookup_or_create(&logfile_id)?;
 	logfile.append_measurement(&measurement)?;
 
 	return Ok(StoreMeasurementResponse {
