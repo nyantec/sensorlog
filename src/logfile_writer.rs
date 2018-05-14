@@ -27,17 +27,12 @@ pub fn append(
 		path: &Path,
 		offset: u64,
 		measurement: &Measurement) -> Result<u64, ::Error> {
-	let encoded = measurement.encode();
-	assert!(encoded.len() as u64 == measurement.get_encoded_size());
-
 	let mut file_opts = fs::OpenOptions::new();
 	file_opts.write(true);
 	file_opts.create(true);
 
-	// N.B. there doesnt appear to be a binding to pwrite in the rust standard lib
 	let mut file = file_opts.open(&path)?;
-	file.seek(SeekFrom::Start(offset))?;
-	file.write_all(&encoded)?;
+	measurement.encode(&mut file, offset)?;
 	file.sync_data()?;
 
 	return Ok(measurement.get_encoded_size());

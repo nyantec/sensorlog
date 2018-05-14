@@ -39,7 +39,17 @@ impl<'a> LogfileReader<'a> {
 	}
 
 	pub fn fetch_last_measurement(&self) -> Result<Option<Measurement>, ::Error> {
-		return Ok(None);
+		let partition = match self.partitions.last() {
+			Some(p) => p,
+			None => return Ok(None)
+		};
+
+		let mut file = fs::File::open(partition.get_file_path())?;
+		let measurement = Measurement::decode(
+				&mut file,
+				partition.get_file_offset())?;
+
+		return Ok(Some(measurement));
 	}
 
 }
