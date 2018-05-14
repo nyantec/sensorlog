@@ -111,7 +111,15 @@ impl Logfile {
 	}
 
 	pub fn get_id(&self) -> LogfileID {
-		return self.storage.read().unwrap().id.clone();
+		let storage_locked = match self.storage.read() {
+			Ok(l) => l,
+			Err(_) => {
+				error!("lock is poisoned; aborting...");
+				process::abort();
+			}
+		};
+
+		return storage_locked.id.clone();
 	}
 
 	pub fn append_measurement(
