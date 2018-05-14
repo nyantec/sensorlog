@@ -1,6 +1,7 @@
 - [ ] move insert and fetch methods into service struct
 - [ ] clock watchdog (called from service)
-- [ ] add monitor rule (in service)
+- [ ] add fetch measurements 'offset' request option
+- [ ] add fetch measurements response size limit (~8MB)
 - [ ] time and byte types
 - [ ] per-sensor quota configuration
 - [ ] store checksums?
