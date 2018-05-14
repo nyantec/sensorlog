@@ -44,6 +44,14 @@ macro_rules! err_quota {
 	($($arg:tt)*) => (::Error::new(&format!($($arg)*), ::ErrorCode::QuotaError))
 }
 
+#[allow(unused_macros)]
+macro_rules! fatal {
+	($($arg:tt)*) => ({
+		error!("FATAL ERROR: {}; aborting...", &format!($($arg)*));
+		::std::process::abort();
+	})
+}
+
 impl Error {
 
 	pub fn new(message: &str, code: ErrorCode) -> Error {

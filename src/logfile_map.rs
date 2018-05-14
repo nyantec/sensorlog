@@ -20,7 +20,6 @@
  */
 use std::collections::HashMap;
 use std::sync::{Arc,RwLock};
-use std::process;
 use ::logfile::Logfile;
 use ::logfile_id::LogfileID;
 use ::logfile_directory::LogfileDirectory;
@@ -56,10 +55,7 @@ impl LogfileMap {
 	pub fn lookup(self: &LogfileMap, logfile_id: &LogfileID) -> Option<Arc<Logfile>> {
 		let logfiles_locked = match self.logfiles.read() {
 			Ok(l) => l,
-			Err(_) => {
-				error!("lock is poisoned; aborting...");
-				process::abort();
-			}
+			Err(_) => fatal!("lock is poisoned")
 		};
 
 		return logfiles_locked
@@ -79,10 +75,7 @@ impl LogfileMap {
 		// grab write lock
 		let mut logfiles_locked = match self.logfiles.write() {
 			Ok(l) => l,
-			Err(_) => {
-				error!("lock is poisoned; aborting...");
-				process::abort();
-			}
+			Err(_) => fatal!("lock is poisoned")
 		};
 
 		// check if the logfile exists again (pessimistic case)

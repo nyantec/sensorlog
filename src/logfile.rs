@@ -19,7 +19,6 @@
  * of said person’s immediate fault when using the work as intended.
  */
 use std::sync::{Arc, RwLock};
-use std::process;
 use std::path::{Path, PathBuf};
 use std::fs;
 use ::logfile_id::LogfileID;
@@ -113,10 +112,7 @@ impl Logfile {
 	pub fn get_id(&self) -> LogfileID {
 		let storage_locked = match self.storage.read() {
 			Ok(l) => l,
-			Err(_) => {
-				error!("lock is poisoned; aborting...");
-				process::abort();
-			}
+			Err(_) => fatal!("lock is poisoned")
 		};
 
 		return storage_locked.id.clone();
@@ -130,10 +126,7 @@ impl Logfile {
 		// lock the storage
 		let mut storage_locked = match self.storage.write() {
 			Ok(l) => l,
-			Err(_) => {
-				error!("lock is poisoned; aborting...");
-				process::abort();
-			}
+			Err(_) => fatal!("lock is poisoned")
 		};
 
 		// check if the measurement exceeds the total storage quota
@@ -172,10 +165,7 @@ impl Logfile {
 			limit: Option<u64>) -> Result<Vec<Measurement>, ::Error> {
 		let storage_locked = match self.storage.read() {
 			Ok(l) => l,
-			Err(_) => {
-				error!("lock is poisoned; aborting...");
-				process::abort();
-			}
+			Err(_) => fatal!("lock is poisoned")
 		};
 
 		let reader = LogfileReader::new(&storage_locked.partitions);
