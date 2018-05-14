@@ -18,9 +18,7 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use std::path::{Path,PathBuf};
 use std::fs;
-use std::io::{Read,Seek,SeekFrom};
 use ::logfile_partition::LogfilePartition;
 use ::measure::Measurement;
 
@@ -34,20 +32,6 @@ impl<'a> LogfileReader<'a> {
 		return LogfileReader {
 			partitions: partitions
 		};
-	}
-
-	pub fn fetch_last_measurement(&self) -> Result<Option<Measurement>, ::Error> {
-		let partition = match self.partitions.last() {
-			Some(p) => p,
-			None => return Ok(None)
-		};
-
-		let mut file = fs::File::open(partition.get_file_path())?;
-		let measurement = Measurement::decode(
-				&mut file,
-				partition.get_file_offset())?;
-
-		return Ok(Some(measurement));
 	}
 
 	pub fn fetch_measurements(

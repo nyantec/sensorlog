@@ -11,11 +11,10 @@ Data Model
 
 The sensorlog binary is a standalone server program that allows you to store and
 retrieve measurement data. Clients interact with the server via a network API.
-The interface is very simple and consists of only three operations:
+The interface is very simple and consists of only two main operations:
 
   - `insertMeasurement(sensor_id, time, data)` - Store a measurement
   - `fetchMeasurements(sensor_id, from, until)` - Retrieve all measurements in the specified time range
-  - `fetchLastMeasurement(sensor_id)` - Retrieve the most recent measurement
 
 A measurement is a 3-tuple of `time`, `sensor_id` and `data`. The `time` field
 should contain the wall clock time at which the measurement was taken. The `sensor_id`
@@ -215,9 +214,6 @@ detailed documentation on the API please [refer to the the documentation](https:
 
     POST /api/v1/store_measurement
          Store a measurement for a given sensor
-
-    POST /api/v1/fetch_last_measurement
-         Retrieve the most recent measurement from a given sensor
 
     POST /api/v1/fetch_measurements
          Retrieve all measurements from a given sensor in the specified time range

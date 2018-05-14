@@ -20,7 +20,6 @@
  */
 use std::path::Path;
 use std::fs;
-use std::io::{Write,Seek,SeekFrom};
 use ::measure::Measurement;
 
 pub fn append(

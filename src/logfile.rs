@@ -177,19 +177,6 @@ impl Logfile {
 				limit);
 	}
 
-	pub fn fetch_last_measurement(&self) -> Result<Option<Measurement>, ::Error> {
-		let storage_locked = match self.storage.read() {
-			Ok(l) => l,
-			Err(_) => {
-				error!("lock is poisoned; aborting...");
-				process::abort();
-			}
-		};
-
-		let reader = LogfileReader::new(&storage_locked.partitions);
-		return reader.fetch_last_measurement();
-	}
-
 }
 
 impl LogfileStorage {

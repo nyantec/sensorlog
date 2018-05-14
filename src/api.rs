@@ -91,30 +91,4 @@ pub fn fetch_measurements(
 	});
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct FetchLastMeasurementRequest {
-	sensor_id: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct FetchLastMeasurementResponse {
-	measurement: Option<Measurement>,
-}
-
-pub fn fetch_last_measurement(
-		service: &Service,
-		req: FetchLastMeasurementRequest) -> Result<FetchLastMeasurementResponse, ::Error> {
-	let logfile_id = LogfileID::from_string(req.sensor_id.to_owned());
-
-	debug!("Fetching last measurement: sensor_id={}", req.sensor_id);
-	let measurement = match service.logfile_map.lookup(&logfile_id) {
-		Some(logfile) => logfile.fetch_last_measurement()?,
-		None => None
-	};
-
-	return Ok(FetchLastMeasurementResponse{
-		measurement: measurement
-	});
-}
-
 
