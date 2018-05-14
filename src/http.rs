@@ -138,7 +138,7 @@ impl hyper::server::Service for HTTPHandler {
 		let service = self.service.clone();
 
 		let res_future = self.thread_pool.spawn_fn(move || {
-		  let (method, uri, _version, _headers, body) = req.deconstruct();
+			let (method, uri, _version, _headers, body) = req.deconstruct();
 
 			let body_chunks = match body.collect().wait() {
 				Ok(v) => v,
