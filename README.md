@@ -238,9 +238,10 @@ resource usage.
 Caveats
 -------
 
-- sensorlog requires the time of measurements to be monotonically increasing.
-  If you try to insert a measurement that is older than another measurement that
-  is already stored, you will get an error message.
+- sensorlog requires the time field of consecutive measurements with the same
+  sensor_id is monotonically increasing.. If you try to insert a measurement that
+  is older than another measurement with the same sensor_id that is already stored,
+  you will get an error message.
 
 - sensorlog can not differentiate between having been re-started and a forward
   jump in system time. That means that shutting down the sensorlog service for a long period
