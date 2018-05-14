@@ -1,6 +1,8 @@
+- [ ] move insert and fetch methods into service struct
+- [ ] clock watchdog (called from service)
+- [ ] add monitor rule (in service)
 - [ ] time and byte types
 - [ ] per-sensor quota configuration
-- [ ] clock watchdog
 - [ ] store checksums?
 - [ ] cli
 - [ ] daemonize/pidfile flags

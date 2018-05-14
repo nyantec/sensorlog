@@ -49,6 +49,13 @@ impl<'a> LogfileReader<'a> {
 				}
 			}
 
+			// break if there is no further partition that can match the time range
+			if let Some(time_limit) = time_limit {
+				if partition.get_time_head() <= time_limit {
+					break 'scan;
+				}
+			}
+
 			let mut file = fs::File::open(partition.get_file_path())?;
 			let mut file_offset = partition.get_file_offset();
 
