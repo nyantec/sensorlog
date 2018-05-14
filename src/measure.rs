@@ -20,11 +20,12 @@
  */
 use std::mem;
 use std::io::{Write,Read,Seek,SeekFrom};
+use serde;
+use serde::ser::SerializeStruct;
 
 const FOOTER_SIZE : u64 = 12;
 
 #[derive(Debug, Clone)]
-#[derive(Serialize, Deserialize)]
 pub struct Measurement {
 	pub time: u64,
 	pub data: Vec<u8>
@@ -111,3 +112,14 @@ impl Measurement {
 
 }
 
+impl serde::Serialize for Measurement {
+
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+			where S: serde::ser::Serializer {
+		let mut state = serializer.serialize_struct("Measurement", 2)?;
+		state.serialize_field("time", &self.time)?;
+		state.serialize_field("data", &String::from_utf8_lossy(&self.data))?;
+		state.end()
+	}
+
+}

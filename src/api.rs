@@ -22,14 +22,14 @@ use ::service::Service;
 use ::logfile_id::LogfileID;
 use ::measure::Measurement;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct StoreMeasurementRequest {
 	time: Option<u64>,
 	sensor_id: String,
 	data: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct StoreMeasurementResponse {
 	success: bool
 }
@@ -53,7 +53,7 @@ pub fn store_measurement(
 	});
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct FetchMeasurementsRequest {
 	sensor_id: String,
 	time_start: Option<u64>,
@@ -61,7 +61,7 @@ pub struct FetchMeasurementsRequest {
 	limit: Option<u64>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct FetchMeasurementsResponse {
 	measurements: Vec<Measurement>,
 }
