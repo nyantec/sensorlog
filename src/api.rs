@@ -54,6 +54,44 @@ pub fn store_measurement(
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct FetchMeasurementsRequest {
+	sensor_id: String,
+	time_start: Option<u64>,
+	time_limit: Option<u64>,
+	limit: Option<u64>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct FetchMeasurementsResponse {
+	measurements: Vec<Measurement>,
+}
+
+pub fn fetch_measurements(
+		service: &Service,
+		req: FetchMeasurementsRequest) -> Result<FetchMeasurementsResponse, ::Error> {
+	let logfile_id = LogfileID::from_string(req.sensor_id.to_owned());
+
+	debug!(
+			"Fetching measurements: sensor_id={}; time_start={:?} time_limit={:?} limit={:?}",
+			req.sensor_id,
+			req.time_start,
+			req.time_limit,
+			req.limit);
+
+	let measurements = match service.logfile_map.lookup(&logfile_id) {
+		Some(logfile) => logfile.fetch_measurements(
+				req.time_start,
+				req.time_limit,
+				req.limit)?,
+		None => Vec::<Measurement>::new()
+	};
+
+	return Ok(FetchMeasurementsResponse{
+		measurements: measurements
+	});
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct FetchLastMeasurementRequest {
 	sensor_id: String,
 }
@@ -78,4 +116,5 @@ pub fn fetch_last_measurement(
 		measurement: measurement
 	});
 }
+
 

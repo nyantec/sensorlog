@@ -25,15 +25,13 @@ use ::logfile_partition::LogfilePartition;
 use ::measure::Measurement;
 
 pub struct LogfileReader<'a> {
-	path: PathBuf,
 	partitions: &'a Vec<LogfilePartition>,
 }
 
 impl<'a> LogfileReader<'a> {
 
-	pub fn new(path: &Path, partitions: &'a Vec<LogfilePartition>) -> LogfileReader<'a> {
+	pub fn new(partitions: &'a Vec<LogfilePartition>) -> LogfileReader<'a> {
 		return LogfileReader {
-			path: path.to_owned(),
 			partitions: partitions
 		};
 	}
@@ -50,6 +48,61 @@ impl<'a> LogfileReader<'a> {
 				partition.get_file_offset())?;
 
 		return Ok(Some(measurement));
+	}
+
+	pub fn fetch_measurements(
+			&self,
+			time_start: Option<u64>,
+			time_limit: Option<u64>,
+			limit: Option<u64>) -> Result<Vec<Measurement>, ::Error> {
+		let mut measurements = Vec::<Measurement>::new();
+
+		'scan: for partition in self.partitions.iter().rev() {
+			// skip partitions that are not part of the time range
+			if let Some(time_start) = time_start {
+				if partition.get_time_tail() > time_start {
+					continue;
+				}
+			}
+
+			let mut file = fs::File::open(partition.get_file_path())?;
+			let mut file_offset = partition.get_file_offset();
+
+			while file_offset > 0 {
+				let measurement = Measurement::decode(&mut file, file_offset)?;
+
+				if measurement.get_encoded_size() <= file_offset {
+					file_offset -= measurement.get_encoded_size();
+				} else {
+					return Err(err_server!("corrupt file"));
+				}
+
+				if let Some(time_start) = time_start {
+					// skip measurements that are not part of the time range
+					if measurement.time > time_start {
+						continue;
+					}
+				}
+
+				// break once the end of the time window is reached
+				if let Some(time_limit) = time_limit {
+					if measurement.time <= time_limit {
+						break 'scan;
+					}
+				}
+
+				measurements.push(measurement);
+
+				// break once limit is reached
+				if let Some(limit) = limit {
+					if measurements.len() as u64 == limit {
+						break 'scan;
+					}
+				}
+			}
+		}
+
+		return Ok(measurements);
 	}
 
 }

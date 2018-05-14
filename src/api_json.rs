@@ -49,6 +49,7 @@ pub fn call_json(
 
 	return match method {
 		"store_measurement" => call(service, &::api::store_measurement, req),
+		"fetch_measurements" => call(service, &::api::fetch_measurements, req),
 		"fetch_last_measurement" => call(service, &::api::fetch_last_measurement, req),
 		_ => Err(err_user!("invalid API method"))
 	};

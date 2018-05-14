@@ -157,6 +157,26 @@ impl Logfile {
 		return storage_locked.commit();
 	}
 
+	pub fn fetch_measurements(
+			&self,
+			time_start: Option<u64>,
+			time_limit: Option<u64>,
+			limit: Option<u64>) -> Result<Vec<Measurement>, ::Error> {
+		let storage_locked = match self.storage.read() {
+			Ok(l) => l,
+			Err(_) => {
+				error!("lock is poisoned; aborting...");
+				process::abort();
+			}
+		};
+
+		let reader = LogfileReader::new(&storage_locked.partitions);
+		return reader.fetch_measurements(
+				time_start,
+				time_limit,
+				limit);
+	}
+
 	pub fn fetch_last_measurement(&self) -> Result<Option<Measurement>, ::Error> {
 		let storage_locked = match self.storage.read() {
 			Ok(l) => l,
@@ -166,10 +186,7 @@ impl Logfile {
 			}
 		};
 
-		let reader = LogfileReader::new(
-				&storage_locked.path,
-				&storage_locked.partitions);
-
+		let reader = LogfileReader::new(&storage_locked.partitions);
 		return reader.fetch_last_measurement();
 	}
 
