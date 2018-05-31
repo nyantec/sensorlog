@@ -1,6 +1,7 @@
 [package]
 name = "sensorlog"
 description = "A lightweight data logging service"
+repository = "https://github.com/nyantec.sensorlog"
 version = "0.1.0"
 authors = ["The sensorlog Authors <oss@nyantec.com>"]
 license = "MirOS"
