@@ -28,13 +28,35 @@ pub enum StorageQuota {
 impl StorageQuota {
 
 	pub fn parse_string(string: &str) -> Result<StorageQuota, ::Error> {
-		return match string {
-			"unlimited" | "infinite" => Ok(StorageQuota::Unlimited),
-			"none" | "zero" => Ok(StorageQuota::Zero),
-			s => match s.parse::<u64>() {
-				Ok(v) => Ok(StorageQuota::Limited{limit_bytes: v}),
-				Err(_) => Err(err_user!("invalid storage quota specification"))
-			}
+		let (value, modifier) = match string.rfind(char::is_numeric) {
+			Some(len) => (Some(&string[0..len+1]), &string[len+1..]),
+			None => (None, string),
+		};
+
+		let value = match value {
+			Some(v) => Some(v.parse::<u64>()?),
+			None => None,
+		};
+
+		return match (value, modifier) {
+			(None, "unlimited") | (None, "infinite") =>
+					Ok(StorageQuota::Unlimited),
+			(None, "none") | (None, "zero") =>
+					Ok(StorageQuota::Zero),
+			(Some(value), "KB") | (Some(value), "kb") =>
+					Ok(StorageQuota::Limited{ limit_bytes: value * 1_000 }),
+			(Some(value), "KiB") | (Some(value), "kib") =>
+					Ok(StorageQuota::Limited{ limit_bytes: value * (1 << 10) }),
+			(Some(value), "MB") | (Some(value), "mb") =>
+					Ok(StorageQuota::Limited{ limit_bytes: value * 1_000_000 }),
+			(Some(value), "MiB") | (Some(value), "mib") =>
+					Ok(StorageQuota::Limited{ limit_bytes: value * (1 << 20) }),
+			(Some(value), "GB") | (Some(value), "gb") =>
+					Ok(StorageQuota::Limited{ limit_bytes: value * 1_000_000_000 }),
+			(Some(value), "GiB") | (Some(value), "gib") =>
+					Ok(StorageQuota::Limited{ limit_bytes: value * (1 << 30) }),
+			_ =>
+					Err(err_user!("invalid quota specification: {}", string))
 		};
 	}
 

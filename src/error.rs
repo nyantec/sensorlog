@@ -79,6 +79,14 @@ impl std::convert::From<()> for Error {
 
 }
 
+impl std::convert::From<std::num::ParseIntError> for Error {
+
+	fn from(e: std::num::ParseIntError) -> Error {
+		return err_server!("Invalid integer: {:?}", e);
+	}
+
+}
+
 impl std::convert::From<std::io::Error> for Error {
 
 	fn from(e: std::io::Error) -> Error {
