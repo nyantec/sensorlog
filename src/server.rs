@@ -125,7 +125,7 @@ fn run() -> Result<(), ::Error> {
 	flag_cfg.optopt("", "listen_http", "", "PORT");
 	flag_cfg.optopt("", "datadir", "", "PATH");
 	flag_cfg.optopt("", "quota_default", "", "QUOTA");
-	flag_cfg.optopt("", "quota", "", "QUOTA");
+	flag_cfg.optmulti("", "quota", "", "QUOTA");
 	flag_cfg.optopt("", "partition_size", "", "BYTES");
 	flag_cfg.optopt("", "loglevel", "", "LEVEL");
 	flag_cfg.optflag("h", "help", "");
