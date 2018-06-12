@@ -20,7 +20,7 @@
  */
 use md5;
 
-#[derive(Clone,Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct LogfileID {
 	id: String
 }

@@ -125,6 +125,7 @@ fn run() -> Result<(), ::Error> {
 	flag_cfg.optopt("", "listen_http", "", "PORT");
 	flag_cfg.optopt("", "datadir", "", "PATH");
 	flag_cfg.optopt("", "quota_default", "", "QUOTA");
+	flag_cfg.optopt("", "quota", "", "QUOTA");
 	flag_cfg.optopt("", "partition_size", "", "BYTES");
 	flag_cfg.optopt("", "loglevel", "", "LEVEL");
 	flag_cfg.optflag("h", "help", "");
@@ -168,6 +169,17 @@ fn run() -> Result<(), ::Error> {
 						&Some(ref v) => v,
 						&None => return Err(err_user!("missing option: --quota_default"))
 					})?);
+
+	for quota_opt in &flags.opt_strs("quota") {
+		let (sensor_id, sensor_quota) = match quota_opt.find(':') {
+			Some(len) => (&quota_opt[0..len], &quota_opt[len+1..]),
+			None => return Err(err_user!("invalid --quota flag: {}", quota_opt)),
+		};
+
+		logfile_config.set_storage_quota_for(
+				&logfile_id::LogfileID::from_string(sensor_id.to_string()),
+				quota::StorageQuota::parse_string(sensor_quota)?);
+	}
 
 	if let Some(partition_size) = flags.opt_str("partition_size") {
 		logfile_config.set_default_partition_size_bytes(

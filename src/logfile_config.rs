@@ -18,6 +18,7 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
+use std::collections::HashMap;
 use ::logfile_id::LogfileID;
 use ::quota::StorageQuota;
 
@@ -25,6 +26,7 @@ const DEFAULT_PARTITION_SIZE_MAX_BYTES : u64 = 1024 * 128;
 
 pub struct LogfileConfig {
 	quota_default: StorageQuota,
+	quota: HashMap<LogfileID, StorageQuota>,
 	partition_size_bytes_default: u64,
 }
 
@@ -33,26 +35,31 @@ impl LogfileConfig {
 	pub fn new() -> LogfileConfig {
 		return LogfileConfig {
 			quota_default: StorageQuota::Zero,
+			quota: HashMap::<LogfileID, StorageQuota>::new(),
 			partition_size_bytes_default: DEFAULT_PARTITION_SIZE_MAX_BYTES
 		};
 	}
 
 	pub fn get_storage_quota_for(&self, logfile_id: &LogfileID) -> StorageQuota {
-		return self.quota_default.clone();
+		return self
+				.quota
+				.get(logfile_id)
+				.unwrap_or(&self.quota_default)
+				.clone();
 	}
 
-	//pub fn set_storage_quota_for(
-	//		&mut self,
-	//		logfile_id: &LogfileID,
-	//		quota: StorageQuota) -> Result<(), ::Error> {
-	//	return Ok(());
-	//}
+	pub fn set_storage_quota_for(
+			&mut self,
+			logfile_id: &LogfileID,
+			quota: StorageQuota) {
+		self.quota.insert(logfile_id.clone(), quota);
+	}
 
 	pub fn set_default_storage_quota(&mut self, quota: StorageQuota) {
 		self.quota_default = quota;
 	}
 
-	pub fn get_partition_size_for(&self, logfile_id: &LogfileID) -> u64 {
+	pub fn get_partition_size_for(&self, _logfile_id: &LogfileID) -> u64 {
 		return self.partition_size_bytes_default;
 	}
 
