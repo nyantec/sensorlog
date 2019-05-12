@@ -136,14 +136,19 @@ impl Logfile {
 		}
 
 		// check that the measurement time is monotonically increasing
-		if let Some(partition) = storage_locked.partitions.last() {
-			if measurement.time < partition.get_time_head() {
-				return Err(
-						err_user!(
-								"measurement time values must be monotonically increasing for \
-								each sensor_id"));
-			}
+		let is_monotonic = match storage_locked.partitions.last() {
+			Some(p) => measurement.time >= p.get_time_head(),
+			None => true,
 		};
+
+		if !is_monotonic {
+			warn!(
+					"Clock for sensor {:?} jumped backwards, flushing data...",
+					storage_locked.id);
+
+			storage_locked.clear()?;
+			storage_locked.commit()?;
+		}
 
 		// allocate storage for the new measurement
 		storage_locked.allocate(measurement_size)?;
@@ -217,6 +222,12 @@ impl LogfileStorage {
 			self.partitions.push(partition);
 		}
 
+		return Ok(());
+	}
+
+	pub fn clear(&mut self) -> Result<(), ::Error> {
+		self.partitions_deleted.append(&mut self.partitions);
+		self.partitions.clear();
 		return Ok(());
 	}
 

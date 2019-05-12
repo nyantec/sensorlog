@@ -73,15 +73,6 @@ Options:
    --quota=<sensor_id>:<quota>
        Set the storage quota for a given sensor id
 
-   --clock_watchdog=<mode>
-      Enable the clock watchdog. Modes are 'off', 'panic' and 'wipe'
-
-   --clock_watchdog_trigger_forward=<threshold>
-      Trigger the clock watchdog if the system time jumps forward by more than threshold
-
-   --clock_watchdog_trigger_backward=<threshold>
-      Trigger the clock watchdog if the system time jumps backward by more than threshold
-
    --partition_size=<bytes>
       Set the partition size (default: 128KB)
 

@@ -37,7 +37,7 @@ Execute the following command to start sensorlog on HTTP port 8080. The messages
 will be stored in `/var/sensordata`:
 
     $ mkdir /var/sensordata
-    $ sensorlog --datadir /var/sensordata --listen_http localhost:8080 --quota_default infinite
+    $ sensorlog --datadir /var/sensordata --listen_http 0.0.0.0:8080 --quota_default infinite
 
 In a shell, run this command to insert the measurement "3250" for sensor
 's1.hydraulic_pressure_psi' (the time parameter will be defaulted to the current
@@ -126,7 +126,7 @@ The naive behaviour would be to simply fail open and continue to serve the exist
 data on record. Of course, this would mean serving incorrect data without any
 way for the user to tell that it is incorrect. Clearly not a good solution!
 
-So instead, sensorlog offers a 'clock watchdog' option that allows you to fail closed
+So instead, sensorlog mplements a clock watchdog option that allows you to fail closed
 whenever the system time changes in unexpected ways. With the clock watchdog enabled
 sensorlog will watch the system clock and trigger the watchdog once it detects a
 large jump in time.
@@ -136,14 +136,7 @@ mode, sensorlogd will simply exit with an error message when the watchdog is tri
 In the 'wipe' mode, triggering the watchdog will result in all stored measurement data
 to be deleted.
 
-Here is how to enable the clock watchdog in 'panic' mode and set it up to trigger
-if the time jumps forwards by more than 7 days or backwards by more than 10 minutes.
-
-    $ sensorlogd \
-      --clock_watchdog panic \
-      --clock_watchdog_trigger_forward 7days \
-      --clock_watchdog_trigger_backward 10min \
-      ...
+CURRENTLY THE WATCHDOG ALWAYS RUNS IN "WIPE" MODE!!!
 
 
 Configuration
@@ -170,15 +163,6 @@ All configuration options are set as command line arguments:
 
        --quota=<sensor_id>:<quota>
            Set the storage quota for a given sensor id
-
-       --clock_watchdog=<mode>
-          Enable the clock watchdog. Modes are 'off', 'panic' and 'wipe'
-
-       --clock_watchdog_trigger_forward=<threshold>
-          Trigger the clock watchdog if the system time jumps forward by more than threshold
-
-       --clock_watchdog_trigger_backward=<threshold>
-          Trigger the clock watchdog if the system time jumps backward by more than threshold
 
        --daemonize
           Daemonize the server
@@ -241,7 +225,7 @@ Caveats
 - sensorlog requires the time field of consecutive measurements with the same
   sensor_id is monotonically increasing.. If you try to insert a measurement that
   is older than another measurement with the same sensor_id that is already stored,
-  you will get an error message.
+  the existing data for the sensor will be flushed.
 
 - sensorlog can not differentiate between having been re-started and a forward
   jump in system time. That means that shutting down the sensorlog service for a long period
