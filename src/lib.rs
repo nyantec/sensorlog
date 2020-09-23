@@ -2,6 +2,7 @@
  * Copyright © 2018 nyantec GmbH <oss@nyantec.com>
  * Authors:
  *   Paul Asmuth <asm@nyantec.com>
+ *   Karl Engelhardt <ken@nyantec.com>
  *
  * Provided that these terms and disclaimer and all copyright notices
  * are retained or reproduced in an accompanying document, permission
