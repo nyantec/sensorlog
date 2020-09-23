@@ -1,0 +1,4 @@
+# Coding guidelines: Tabs should only be used at the beginning of a line to signify lexical structure, with exactly a single tab character per block nesting level. Spaces should only be used for vertical alignment of lines within the same block nesting level.
+hard_tabs = true
+# Coding guidelines: Therefore we aim to limit the length of a line to 100 characters not including indentation.
+max_width = 100

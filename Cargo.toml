@@ -2,17 +2,9 @@
 name = "sensorlog"
 description = "A lightweight data logging service"
 repository = "https://github.com/nyantec.sensorlog"
-version = "0.2.0"
+version = "1.0.0"
 authors = ["The sensorlog Authors <oss@nyantec.com>"]
 license = "MirOS"
-
-[[bin]]
-name = "sensorlogd"
-path = "src/server.rs"
-
-[[bin]]
-name = "sensorlogctl"
-path = "src/cli.rs"
 
 [dependencies]
 getopts = "0.2.17"

@@ -18,14 +18,11 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use std::path::Path;
+use measure::Measurement;
 use std::fs;
-use ::measure::Measurement;
+use std::path::Path;
 
-pub fn append(
-		path: &Path,
-		offset: u64,
-		measurement: &Measurement) -> Result<u64, ::Error> {
+pub fn append(path: &Path, offset: u64, measurement: &Measurement) -> Result<u64, ::Error> {
 	let mut file_opts = fs::OpenOptions::new();
 	file_opts.write(true);
 	file_opts.create(true);
@@ -34,6 +31,5 @@ pub fn append(
 	measurement.encode(&mut file, offset)?;
 	file.sync_data()?;
 
-	return Ok(measurement.get_encoded_size());
+	Ok(measurement.get_encoded_size())
 }
-
