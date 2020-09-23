@@ -1,7 +1,8 @@
 /**
  * Copyright © 2018 nyantec GmbH <oss@nyantec.com>
  * Authors:
- *	 Paul Asmuth <asm@nyantec.com>
+ *   Paul Asmuth <asm@nyantec.com>
+ *   Karl Engelhardt <ken@nyantec.com>
  *
  * Provided that these terms and disclaimer and all copyright notices
  * are retained or reproduced in an accompanying document, permission
@@ -28,7 +29,7 @@ const FOOTER_SIZE: u64 = 12;
 #[derive(Debug, Clone)]
 pub struct Measurement {
 	pub time: u64,
-	pub data: Vec<u8>,
+	pub data: String,
 }
 
 impl Measurement {
@@ -63,7 +64,7 @@ impl Measurement {
 		storage.seek(SeekFrom::Start(data_offset))?;
 		storage.read_exact(&mut data)?;
 
-		let measurement = Measurement { time, data };
+		let measurement = Measurement { time, data: String::from_utf8(data)? };
 
 		Ok(measurement)
 	}
@@ -74,7 +75,7 @@ impl Measurement {
 		let data_size_encoded: [u8; 4] =
 			unsafe { mem::transmute((self.data.len() as u32).to_le()) };
 
-		let mut encoded = self.data.clone();
+		let mut encoded = self.data.clone().as_bytes().to_vec();
 		encoded.extend_from_slice(&data_size_encoded);
 		encoded.extend_from_slice(&time_encoded);
 
@@ -98,7 +99,7 @@ impl serde::Serialize for Measurement {
 	{
 		let mut state = serializer.serialize_struct("Measurement", 2)?;
 		state.serialize_field("time", &self.time)?;
-		state.serialize_field("data", &String::from_utf8_lossy(&self.data))?;
+		state.serialize_field("data", &self.data)?;
 		state.end()
 	}
 }

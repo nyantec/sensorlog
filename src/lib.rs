@@ -84,7 +84,7 @@ impl Sensorlog {
 
 		let measurement = Measurement {
 			time: time.unwrap_or(::time::get_unix_microseconds()?),
-			data: data.as_bytes().to_vec(),
+			data: data.to_string(),
 		};
 
 		let logfile_id = LogfileID::from_string(sensor_id.to_owned());

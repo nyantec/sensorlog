@@ -95,3 +95,9 @@ impl std::convert::From<std::ffi::OsString> for Error {
 		return err_server!("FFI error: {:?}", e);
 	}
 }
+
+impl std::convert::From<std::string::FromUtf8Error> for Error {
+	fn from(e: std::string::FromUtf8Error) -> Error {
+		return err_server!("Invalid UTF8: {:?}", e);
+	}
+}
