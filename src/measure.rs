@@ -24,7 +24,7 @@ use serde::ser::SerializeStruct;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::mem;
 
-const FOOTER_SIZE: u64 = 12;
+pub const FOOTER_SIZE: u64 = 12;
 
 #[derive(Debug, Clone)]
 pub struct Measurement {
