@@ -18,23 +18,25 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use std::sync::{Arc, RwLock};
-use std::path::{Path, PathBuf};
+use logfile_config::LogfileConfig;
+use logfile_id::LogfileID;
+use logfile_partition::LogfilePartition;
+use logfile_reader::LogfileReader;
+use logfile_transaction::LogfileTransaction;
+use measure::Measurement;
+use quota::StorageQuota;
 use std::fs;
-use ::logfile_id::LogfileID;
-use ::logfile_config::LogfileConfig;
-use ::logfile_partition::LogfilePartition;
-use ::logfile_transaction::LogfileTransaction;
-use ::logfile_reader::LogfileReader;
-use ::quota::StorageQuota;
-use ::measure::Measurement;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, RwLock};
 
-const TRANSACTION_FILE_NAME : &'static str = "tx.lock";
+const TRANSACTION_FILE_NAME: &str = "tx.lock";
 
+#[derive(Debug, Clone)]
 pub struct Logfile {
 	storage: Arc<RwLock<LogfileStorage>>,
 }
 
+#[derive(Debug, Clone)]
 pub struct LogfileStorage {
 	id: LogfileID,
 	path: PathBuf,
@@ -45,11 +47,7 @@ pub struct LogfileStorage {
 }
 
 impl Logfile {
-
-	pub fn create(
-			id: LogfileID,
-			path: &Path,
-			config: &LogfileConfig) -> Result<Logfile, ::Error> {
+	pub fn create(id: LogfileID, path: &Path, config: &LogfileConfig) -> Result<Logfile, ::Error> {
 		let storage_quota = config.get_storage_quota_for(&id);
 		if storage_quota.is_zero() {
 			return Err(err_quota!("insufficient quota"));
@@ -62,19 +60,17 @@ impl Logfile {
 			storage: Arc::new(RwLock::new(LogfileStorage {
 				id: id.clone(),
 				path: path.to_owned(),
-				storage_quota: storage_quota,
+				storage_quota,
 				partitions: Vec::<LogfilePartition>::new(),
 				partitions_deleted: Vec::<LogfilePartition>::new(),
 				partition_size_bytes: config.get_partition_size_for(&id),
 			})),
 		};
 
-		return Ok(logfile);
+		Ok(logfile)
 	}
 
-	pub fn open(
-			path: &Path,
-			config: &LogfileConfig) -> Result<Option<Logfile>, ::Error> {
+	pub fn open(path: &Path, config: &LogfileConfig) -> Result<Option<Logfile>, ::Error> {
 		let transaction_path = path.join(TRANSACTION_FILE_NAME).to_owned();
 		if !transaction_path.exists() {
 			return Ok(None);
@@ -88,12 +84,12 @@ impl Logfile {
 		let mut logfile_partitions = Vec::<LogfilePartition>::new();
 
 		for partition in transaction.partitions {
-			logfile_partitions.push(
-					LogfilePartition::open(
-							path,
-							partition.time_head,
-							partition.time_tail,
-							partition.offset));
+			logfile_partitions.push(LogfilePartition::open(
+				path,
+				partition.time_head,
+				partition.time_tail,
+				partition.offset,
+			));
 		}
 
 		let logfile = Logfile {
@@ -107,27 +103,25 @@ impl Logfile {
 			})),
 		};
 
-		return Ok(Some(logfile));
+		Ok(Some(logfile))
 	}
 
 	pub fn get_id(&self) -> LogfileID {
 		let storage_locked = match self.storage.read() {
 			Ok(l) => l,
-			Err(_) => fatal!("lock is poisoned")
+			Err(_) => fatal!("lock is poisoned"),
 		};
 
-		return storage_locked.id.clone();
+		storage_locked.id.clone()
 	}
 
-	pub fn append_measurement(
-			&self,
-			measurement: &Measurement) -> Result<(), ::Error> {
+	pub fn append_measurement(&self, measurement: &Measurement) -> Result<(), ::Error> {
 		let measurement_size = measurement.get_encoded_size() as u64;
 
 		// lock the storage
 		let mut storage_locked = match self.storage.write() {
 			Ok(l) => l,
-			Err(_) => fatal!("lock is poisoned")
+			Err(_) => fatal!("lock is poisoned"),
 		};
 
 		// check if the measurement exceeds the total storage quota
@@ -144,8 +138,9 @@ impl Logfile {
 
 		if !is_monotonic {
 			warn!(
-					"Clock for sensor {:?} jumped backwards, flushing data...",
-					storage_locked.id);
+				"Clock for sensor {:?} jumped backwards, flushing data...",
+				storage_locked.id
+			);
 
 			storage_locked.clear()?;
 			storage_locked.commit()?;
@@ -161,35 +156,29 @@ impl Logfile {
 		};
 
 		// commit the transaction to disk
-		return storage_locked.commit();
+		storage_locked.commit()
 	}
 
 	pub fn fetch_measurements(
-			&self,
-			time_start: Option<u64>,
-			time_limit: Option<u64>,
-			limit: Option<u64>) -> Result<Vec<Measurement>, ::Error> {
+		&self,
+		time_start: Option<u64>,
+		time_limit: Option<u64>,
+		limit: Option<u64>,
+	) -> Result<Vec<Measurement>, ::Error> {
 		let storage_locked = match self.storage.read() {
 			Ok(l) => l,
-			Err(_) => fatal!("lock is poisoned")
+			Err(_) => fatal!("lock is poisoned"),
 		};
 
 		let reader = LogfileReader::new(&storage_locked.partitions);
-		return reader.fetch_measurements(
-				time_start,
-				time_limit,
-				limit);
+		reader.fetch_measurements(time_start, time_limit, limit)
 	}
-
 }
 
 impl LogfileStorage {
-
 	pub fn commit(&mut self) -> Result<(), ::Error> {
 		// write transaction to disk
-		let transaction = LogfileTransaction::new(
-				&self.id,
-				&self.partitions);
+		let transaction = LogfileTransaction::new(&self.id, &self.partitions);
 
 		let transaction_path = self.path.join(TRANSACTION_FILE_NAME);
 		transaction.write_file(&transaction_path)?;
@@ -201,7 +190,7 @@ impl LogfileStorage {
 
 		self.partitions_deleted.clear();
 
-		return Ok(());
+		Ok(())
 	}
 
 	pub fn allocate(&mut self, new_bytes: u64) -> Result<(), ::Error> {
@@ -210,37 +199,41 @@ impl LogfileStorage {
 
 		// append a new head partition if the current head partition is full
 		let new_partition = match self.partitions.last() {
-			Some(partition) =>
+			Some(partition) => {
 				if partition.get_file_offset() + new_bytes > self.partition_size_bytes {
-					Some(LogfilePartition::create(&self.path, partition.get_time_head())?)
+					Some(LogfilePartition::create(
+						&self.path,
+						partition.get_time_head(),
+					)?)
 				} else {
 					None
-				},
-			None => Some(LogfilePartition::create(&self.path, 0)?)
+				}
+			}
+			None => Some(LogfilePartition::create(&self.path, 0)?),
 		};
 
 		if let Some(partition) = new_partition {
 			self.partitions.push(partition);
 		}
 
-		return Ok(());
+		Ok(())
 	}
 
 	pub fn clear(&mut self) -> Result<(), ::Error> {
 		self.partitions_deleted.append(&mut self.partitions);
 		self.partitions.clear();
-		return Ok(());
+		Ok(())
 	}
 
 	pub fn garbage_collect(&mut self, new_bytes: u64) -> Result<(), ::Error> {
-		let mut required_bytes : u64 =
-				new_bytes + self
-						.partitions
-						.iter()
-						.fold(0, |s, x| s + x.get_file_offset());
+		let mut required_bytes: u64 = new_bytes
+			+ self
+				.partitions
+				.iter()
+				.fold(0, |s, x| s + x.get_file_offset());
 
 		while !self.storage_quota.is_sufficient_bytes(required_bytes) {
-			if self.partitions.len() == 0 {
+			if self.partitions.is_empty() {
 				return Err(err_server!("corrupt partition map"));
 			}
 
@@ -249,8 +242,6 @@ impl LogfileStorage {
 			self.partitions_deleted.push(deleted_partition);
 		}
 
-		return Ok(());
+		Ok(())
 	}
-
 }
-

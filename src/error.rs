@@ -2,6 +2,7 @@
  * Copyright © 2018 nyantec GmbH <oss@nyantec.com>
  * Authors:
  *   Paul Asmuth <asm@nyantec.com>
+ *   Karl Engelhardt <ken@nyantec.com>
  *
  * Provided that these terms and disclaimer and all copyright notices
  * are retained or reproduced in an accompanying document, permission
@@ -21,7 +22,11 @@
 use std;
 
 #[derive(Debug)]
-pub enum ErrorCode { InternalServerError, BadRequest, QuotaError }
+pub enum ErrorCode {
+	InternalServerError,
+	BadRequest,
+	QuotaError,
+}
 
 #[derive(Debug)]
 pub struct Error {
@@ -53,53 +58,46 @@ macro_rules! fatal {
 }
 
 impl Error {
-
 	pub fn new(message: &str, code: ErrorCode) -> Error {
-		return Error {
+		Error {
 			message: message.to_owned(),
-			code: code
-		};
+			code,
+		}
 	}
-
 }
 
 impl std::fmt::Display for Error {
-
 	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
 		return write!(f, "ERROR ({:?}): {}", self.code, self.message);
 	}
-
 }
 
 impl std::convert::From<()> for Error {
-
 	fn from(_: ()) -> Error {
 		return err_server!("error: unknown error");
 	}
-
 }
 
 impl std::convert::From<std::num::ParseIntError> for Error {
-
 	fn from(e: std::num::ParseIntError) -> Error {
 		return err_server!("Invalid integer: {:?}", e);
 	}
-
 }
 
 impl std::convert::From<std::io::Error> for Error {
-
 	fn from(e: std::io::Error) -> Error {
 		return err_server!("I/O error: {:?}", e);
 	}
-
 }
 
 impl std::convert::From<std::ffi::OsString> for Error {
-
 	fn from(e: std::ffi::OsString) -> Error {
 		return err_server!("FFI error: {:?}", e);
 	}
-
 }
 
+impl std::convert::From<std::string::FromUtf8Error> for Error {
+	fn from(e: std::string::FromUtf8Error) -> Error {
+		return err_server!("Invalid UTF8: {:?}", e);
+	}
+}

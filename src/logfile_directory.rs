@@ -18,21 +18,21 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use std::path::{Path,PathBuf};
+use logfile::Logfile;
+use logfile_config::LogfileConfig;
+use logfile_id::{LogfileID, LogfilePath};
 use std::fs;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use ::logfile::Logfile;
-use ::logfile_id::{LogfileID, LogfilePath};
-use ::logfile_config::LogfileConfig;
 
-const DATABASE_PATH : &'static str = "db";
+const DATABASE_PATH: &str = "db";
 
+#[derive(Debug, Clone)]
 pub struct LogfileDirectory {
 	pub path: PathBuf,
 }
 
 impl LogfileDirectory {
-
 	pub fn open(path: &Path) -> Result<LogfileDirectory, ::Error> {
 		fs::create_dir_all(path.join(DATABASE_PATH))?;
 
@@ -40,38 +40,37 @@ impl LogfileDirectory {
 			path: path.to_owned(),
 		};
 
-		return Ok(logfile_directory);
+		Ok(logfile_directory)
 	}
 
 	pub fn create_logfile(
-			&self,
-			logfile_id: &LogfileID,
-			logfile_config: &LogfileConfig) -> Result<Arc<Logfile>, ::Error> {
-		let logfile_path = self.path
-				.join(DATABASE_PATH)
-				.join(logfile_id.get_path().get_file_name());
+		&self,
+		logfile_id: &LogfileID,
+		logfile_config: &LogfileConfig,
+	) -> Result<Arc<Logfile>, ::Error> {
+		let logfile_path = self
+			.path
+			.join(DATABASE_PATH)
+			.join(logfile_id.get_path().get_file_name());
 
-		let logfile = Logfile::create(
-				logfile_id.clone(),
-				&logfile_path,
-				logfile_config)?;
+		let logfile = Logfile::create(logfile_id.clone(), &logfile_path, logfile_config)?;
 
-		return Ok(Arc::new(logfile));
+		Ok(Arc::new(logfile))
 	}
 
 	pub fn load_logfile(
-			&self,
-			logfile_path: &LogfilePath,
-			logfile_config: &LogfileConfig) -> Result<Option<Arc<Logfile>>, ::Error> {
-		let logfile_path = self.path
-				.join(DATABASE_PATH)
-				.join(&logfile_path.get_file_name());
+		&self,
+		logfile_path: &LogfilePath,
+		logfile_config: &LogfileConfig,
+	) -> Result<Option<Arc<Logfile>>, ::Error> {
+		let logfile_path = self
+			.path
+			.join(DATABASE_PATH)
+			.join(&logfile_path.get_file_name());
 
-		let logfile = Logfile::open(
-				&logfile_path,
-				logfile_config)?;
+		let logfile = Logfile::open(&logfile_path, logfile_config)?;
 
-		return Ok(logfile.map(|f| Arc::new(f)));
+		Ok(logfile.map(Arc::new))
 	}
 
 	pub fn list_logfiles(&self) -> Result<Vec<LogfilePath>, ::Error> {
@@ -79,13 +78,11 @@ impl LogfileDirectory {
 
 		for dirent in fs::read_dir(self.path.join("db"))? {
 			let dirent = dirent?;
-			logfiles.push(
-					LogfilePath::from_file_name(
-							dirent.file_name().into_string()?));
+			logfiles.push(LogfilePath::from_file_name(
+				dirent.file_name().into_string()?,
+			));
 		}
 
-		return Ok(logfiles);
+		Ok(logfiles)
 	}
-
 }
-

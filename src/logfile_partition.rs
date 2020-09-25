@@ -18,10 +18,11 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
-use std::path::{Path,PathBuf};
+use measure::Measurement;
 use std::fs;
-use ::measure::Measurement;
+use std::path::{Path, PathBuf};
 
+#[derive(Debug, Clone)]
 pub struct LogfilePartition {
 	path: PathBuf,
 	time_head: u64,
@@ -30,7 +31,6 @@ pub struct LogfilePartition {
 }
 
 impl LogfilePartition {
-
 	pub fn create(path: &Path, time: u64) -> Result<LogfilePartition, ::Error> {
 		let partition = LogfilePartition {
 			path: path.to_owned(),
@@ -39,51 +39,48 @@ impl LogfilePartition {
 			offset: 0,
 		};
 
-		info!("Creating new logfile partition; path={:?}", partition.get_file_path());
-		return Ok(partition);
+		info!(
+			"Creating new logfile partition; path={:?}",
+			partition.get_file_path()
+		);
+		Ok(partition)
 	}
 
-	pub fn open(
-			path: &Path,
-			time_head: u64,
-			time_tail: u64,
-			offset: u64) -> LogfilePartition {
-		return LogfilePartition {
+	pub fn open(path: &Path, time_head: u64, time_tail: u64, offset: u64) -> LogfilePartition {
+		LogfilePartition {
 			path: path.to_owned(),
-			time_head: time_head,
-			time_tail: time_tail,
-			offset: offset,
-		};
+			time_head,
+			time_tail,
+			offset,
+		}
 	}
 
-	pub fn append_measurement(
-			&mut self,
-			measurement: &Measurement) -> Result<(), ::Error> {
+	pub fn append_measurement(&mut self, measurement: &Measurement) -> Result<(), ::Error> {
 		if measurement.time < self.time_head {
-			return Err(
-					err_user!(
-							"measurement time values must be monotonically increasing for \
-							each sensor_id"));
+			return Err(err_user!(
+				"measurement time values must be monotonically increasing for \
+							each sensor_id"
+			));
 		}
 
 		debug!(
-				"Storing new measurement; time={}, foffset={}",
-				measurement.time,
-				self.offset);
+			"Storing new measurement; time={}, foffset={}",
+			measurement.time, self.offset
+		);
 
-		self.offset += ::logfile_writer::append(
-				&self.get_file_path(),
-				self.offset,
-				measurement)?;
+		self.offset += ::logfile_writer::append(&self.get_file_path(), self.offset, measurement)?;
 
 		self.time_head = measurement.time;
-		return Ok(());
+		Ok(())
 	}
 
 	pub fn delete(&self) -> Result<(), ::Error> {
-		info!("Deleting logfile partition; path={:?}", self.get_file_path());
+		info!(
+			"Deleting logfile partition; path={:?}",
+			self.get_file_path()
+		);
 		fs::remove_file(self.get_file_path())?;
-		return Ok(());
+		Ok(())
 	}
 
 	pub fn get_file_name(&self) -> String {
@@ -91,20 +88,18 @@ impl LogfilePartition {
 	}
 
 	pub fn get_file_path(&self) -> PathBuf {
-		return self.path.join(self.get_file_name()).to_owned();
+		self.path.join(self.get_file_name())
 	}
 
 	pub fn get_file_offset(&self) -> u64 {
-		return self.offset;
+		self.offset
 	}
 
 	pub fn get_time_head(&self) -> u64 {
-		return self.time_head;
+		self.time_head
 	}
 
 	pub fn get_time_tail(&self) -> u64 {
-		return self.time_tail;
+		self.time_tail
 	}
-
 }
-

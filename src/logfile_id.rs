@@ -22,45 +22,37 @@ use md5;
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct LogfileID {
-	id: String
+	id: String,
 }
 
 pub struct LogfilePath {
-	file_name : String
+	file_name: String,
 }
 
 impl LogfileID {
-
 	pub fn from_string(string: String) -> LogfileID {
-		return LogfileID {
-			id: string
-		};
+		LogfileID { id: string }
 	}
 
 	pub fn get_string(&self) -> String {
-		return self.id.to_owned();
+		self.id.to_owned()
 	}
 
 	pub fn get_path(&self) -> LogfilePath {
 		let id_digest = md5::compute(self.id.as_bytes());
 
-		return LogfilePath {
-			file_name: format!("{:x}", id_digest)
-		};
+		LogfilePath {
+			file_name: format!("{:x}", id_digest),
+		}
 	}
 }
 
 impl LogfilePath {
-
 	pub fn from_file_name(file_name: String) -> LogfilePath {
-		return LogfilePath {
-			file_name: file_name
-		};
+		LogfilePath { file_name }
 	}
 
 	pub fn get_file_name(&self) -> String {
-		return self.file_name.to_owned();
+		self.file_name.to_owned()
 	}
-
 }
-

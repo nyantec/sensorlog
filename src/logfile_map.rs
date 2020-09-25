@@ -18,13 +18,14 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
+use logfile::Logfile;
+use logfile_config::LogfileConfig;
+use logfile_directory::LogfileDirectory;
+use logfile_id::LogfileID;
 use std::collections::HashMap;
-use std::sync::{Arc,RwLock};
-use ::logfile::Logfile;
-use ::logfile_id::LogfileID;
-use ::logfile_directory::LogfileDirectory;
-use ::logfile_config::LogfileConfig;
+use std::sync::{Arc, RwLock};
 
+#[derive(Debug, Clone)]
 pub struct LogfileMap {
 	directory: LogfileDirectory,
 	config: LogfileConfig,
@@ -32,10 +33,7 @@ pub struct LogfileMap {
 }
 
 impl LogfileMap {
-
-	pub fn open(
-			directory: LogfileDirectory,
-			config: LogfileConfig) -> Result<LogfileMap, ::Error> {
+	pub fn open(directory: LogfileDirectory, config: LogfileConfig) -> Result<LogfileMap, ::Error> {
 		let mut logfile_map = HashMap::<String, Arc<Logfile>>::new();
 
 		info!("Opening logfile database at {:?}", directory.path);
@@ -45,27 +43,26 @@ impl LogfileMap {
 			}
 		}
 
-		return Ok(LogfileMap {
-			directory: directory,
-			config: config,
+		Ok(LogfileMap {
+			directory,
+			config,
 			logfiles: Arc::new(RwLock::new(logfile_map)),
-		});
+		})
 	}
 
 	pub fn lookup(self: &LogfileMap, logfile_id: &LogfileID) -> Option<Arc<Logfile>> {
 		let logfiles_locked = match self.logfiles.read() {
 			Ok(l) => l,
-			Err(_) => fatal!("lock is poisoned")
+			Err(_) => fatal!("lock is poisoned"),
 		};
 
-		return logfiles_locked
-				.get(&logfile_id.get_string())
-				.map(|l| l.clone());
+		logfiles_locked.get(&logfile_id.get_string()).cloned()
 	}
 
 	pub fn lookup_or_create(
-			self: &LogfileMap,
-			logfile_id: &LogfileID) -> Result<Arc<Logfile>, ::Error> {
+		self: &LogfileMap,
+		logfile_id: &LogfileID,
+	) -> Result<Arc<Logfile>, ::Error> {
 		// rust RWLocks don't support upgrades. so we implement an optimistic
 		// fast path using a read lock
 		if let Some(logfile) = self.lookup(&logfile_id) {
@@ -75,7 +72,7 @@ impl LogfileMap {
 		// grab write lock
 		let mut logfiles_locked = match self.logfiles.write() {
 			Ok(l) => l,
-			Err(_) => fatal!("lock is poisoned")
+			Err(_) => fatal!("lock is poisoned"),
 		};
 
 		// check if the logfile exists again (pessimistic case)
@@ -86,8 +83,16 @@ impl LogfileMap {
 		// if the logfile doesn't exist yet, create a new one
 		let logfile = self.directory.create_logfile(logfile_id, &self.config)?;
 		logfiles_locked.insert(logfile_id.get_string(), logfile.clone());
-		return Ok(logfile);
+		Ok(logfile)
 	}
 
+	pub fn set_storage_quota_for(&mut self, logfile_id: &LogfileID, quota: ::quota::StorageQuota) {
+		self.config.set_storage_quota_for(&logfile_id, quota);
+		// grab write lock
+		let mut logfiles_locked = match self.logfiles.write() {
+			Ok(l) => l,
+			Err(_) => fatal!("lock is poisoned"),
+		};
+		logfiles_locked.remove(&logfile_id.get_string());
+	}
 }
-

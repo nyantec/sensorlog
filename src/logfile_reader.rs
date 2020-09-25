@@ -18,27 +18,26 @@
  * damage or existence of a defect, except proven that it results out
  * of said person’s immediate fault when using the work as intended.
  */
+use logfile_partition::LogfilePartition;
+use measure::Measurement;
 use std::fs;
-use ::logfile_partition::LogfilePartition;
-use ::measure::Measurement;
 
+#[derive(Debug, Clone)]
 pub struct LogfileReader<'a> {
-	partitions: &'a Vec<LogfilePartition>,
+	partitions: &'a [LogfilePartition],
 }
 
 impl<'a> LogfileReader<'a> {
-
-	pub fn new(partitions: &'a Vec<LogfilePartition>) -> LogfileReader<'a> {
-		return LogfileReader {
-			partitions: partitions
-		};
+	pub fn new(partitions: &'a [LogfilePartition]) -> LogfileReader<'a> {
+		LogfileReader { partitions }
 	}
 
 	pub fn fetch_measurements(
-			&self,
-			time_start: Option<u64>,
-			time_limit: Option<u64>,
-			limit: Option<u64>) -> Result<Vec<Measurement>, ::Error> {
+		&self,
+		time_start: Option<u64>,
+		time_limit: Option<u64>,
+		limit: Option<u64>,
+	) -> Result<Vec<Measurement>, ::Error> {
 		let mut measurements = Vec::<Measurement>::new();
 
 		'scan: for partition in self.partitions.iter().rev() {
@@ -93,7 +92,6 @@ impl<'a> LogfileReader<'a> {
 			}
 		}
 
-		return Ok(measurements);
+		Ok(measurements)
 	}
-
 }

@@ -2,6 +2,7 @@
  * Copyright © 2018 nyantec GmbH <oss@nyantec.com>
  * Authors:
  *   Paul Asmuth <asm@nyantec.com>
+ *   Karl Engelhardt <ken@nyantec.com>
  *
  * Provided that these terms and disclaimer and all copyright notices
  * are retained or reproduced in an accompanying document, permission
@@ -21,9 +22,8 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub fn get_unix_microseconds() -> Result<u64, ::Error> {
-	return match SystemTime::now().duration_since(UNIX_EPOCH) {
+	match SystemTime::now().duration_since(UNIX_EPOCH) {
 		Ok(t) => Ok(t.as_secs() * 1000000 + t.subsec_nanos() as u64 / 1000),
-		Err(_) => Err(err_server!("cannot get current timestamp"))
-	};
+		Err(_) => Err(err_server!("cannot get current timestamp")),
+	}
 }
-
