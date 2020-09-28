@@ -173,6 +173,21 @@ impl Logfile {
 		let reader = LogfileReader::new(&storage_locked.partitions);
 		reader.fetch_measurements(time_start, time_limit, limit)
 	}
+
+	pub fn set_storage_quota(&self, quota: StorageQuota) -> Result<(), ::Error> {
+		if quota.is_zero() {
+			return Err(err_quota!("insufficient quota"));
+		}
+
+		// lock the storage
+		let mut storage_locked = match self.storage.write() {
+			Ok(l) => l,
+			Err(_) => fatal!("lock is poisoned"),
+		};
+		storage_locked.storage_quota = quota;
+
+		Ok(())
+	}
 }
 
 impl LogfileStorage {
