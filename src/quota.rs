@@ -19,7 +19,7 @@
  * of said person’s immediate fault when using the work as intended.
  */
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum StorageQuota {
 	Unlimited,
 	Limited { limit_bytes: u64 },

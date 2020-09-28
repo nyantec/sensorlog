@@ -86,13 +86,17 @@ impl LogfileMap {
 		Ok(logfile)
 	}
 
-	pub fn set_storage_quota_for(&mut self, logfile_id: &LogfileID, quota: ::quota::StorageQuota) {
-		self.config.set_storage_quota_for(&logfile_id, quota);
-		// grab write lock
-		let mut logfiles_locked = match self.logfiles.write() {
+	pub fn set_storage_quota_for(&mut self, logfile_id: &LogfileID, quota: ::quota::StorageQuota) -> Result<(), ::Error> {
+		self.config.set_storage_quota_for(&logfile_id, quota.clone());
+
+		let logfiles_locked = match self.logfiles.read() {
 			Ok(l) => l,
 			Err(_) => fatal!("lock is poisoned"),
 		};
-		logfiles_locked.remove(&logfile_id.get_string());
+		if let Some(logfile) = logfiles_locked.get(&logfile_id.get_string()) {
+			logfile.set_storage_quota(quota)?;
+		}
+
+		Ok(())
 	}
 }

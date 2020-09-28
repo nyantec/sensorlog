@@ -418,7 +418,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "sensorlog"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "env_logger 0.5.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.21 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -116,7 +116,7 @@ impl Sensorlog {
 		Ok(measurements)
 	}
 
-	pub fn set_storage_quota_for(&mut self, sensor_id: &str, quota: ::quota::StorageQuota) {
+	pub fn set_storage_quota_for(&mut self, sensor_id: &str, quota: ::quota::StorageQuota) -> Result<(), Error> {
 		let logfile_id = LogfileID::from_string(sensor_id.to_string());
 		self.logfile_map.set_storage_quota_for(&logfile_id, quota)
 	}

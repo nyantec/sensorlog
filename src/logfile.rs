@@ -150,8 +150,13 @@ impl Logfile {
 		storage_locked.allocate(measurement_size)?;
 
 		// insert the new measurement into the head partition
-		match storage_locked.partitions.last_mut() {
-			Some(p) => p.append_measurement(measurement)?,
+		match &mut storage_locked.partitions.last_mut() {
+			Some(p) => {
+				p.append_measurement(measurement)?;
+				let part_name = p.get_file_name();
+				// Make sure that the currently used partition is not in self.deleted_partition
+				storage_locked.partitions_deleted.retain(|x| x.get_file_name() != part_name);
+			},
 			None => return Err(err_server!("corrupt partition map")),
 		};
 
@@ -172,6 +177,21 @@ impl Logfile {
 
 		let reader = LogfileReader::new(&storage_locked.partitions);
 		reader.fetch_measurements(time_start, time_limit, limit)
+	}
+
+	pub fn set_storage_quota(&self, quota: StorageQuota) -> Result<(), ::Error> {
+		if quota.is_zero() {
+			return Err(err_quota!("insufficient quota"));
+		}
+
+		// lock the storage
+		let mut storage_locked = match self.storage.write() {
+			Ok(l) => l,
+			Err(_) => fatal!("lock is poisoned"),
+		};
+		storage_locked.storage_quota = quota;
+
+		Ok(())
 	}
 }
 
